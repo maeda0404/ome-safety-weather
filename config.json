@@ -1,7 +1,7 @@
 {
   "display_name": "青梅地域",
-  "latitude": "SET_EXACT_LATITUDE",
-  "longitude": "SET_EXACT_LONGITUDE",
+  "latitude": 35.780514,
+  "longitude": 139.320413,
   "timezone": "Asia/Tokyo",
   "jma_warning_area_name": "青梅市",
   "thresholds": {
