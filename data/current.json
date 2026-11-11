@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-11T07:47:24.916589+00:00",
+  "generated_at": "2026-11-11T07:47:24+00:00",
   "weather": {
     "temperature": 12.6,
     "precipitation": 0.0,
@@ -20,9 +20,5 @@
   "judgement": {
     "level": "caution",
     "label": "注意情報あり"
-  },
-  "notes": [
-    "土砂災害判定は対象外",
-    "地点座標と警報区域コードは正式確認が必要"
-  ]
+  }
 }
