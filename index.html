@@ -1,49 +1,14 @@
 <!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <title>青梅地域 安全・気象情報</title>
-  <link rel="stylesheet" href="assets/style.css?v=1">
-</head>
-<body>
-  <main id="stage" aria-live="polite">
-    <header class="topbar">
-      <h1>青梅地域 安全・気象情報</h1>
-      <div class="top-right"><time id="clock">----/--/-- --:--:--</time><span id="connection" class="status normal">● 通信確認中</span></div>
-    </header>
-
-    <section class="hero panel">
-      <div class="current">
-        <h2>現在の気象状況</h2>
-        <div><strong id="temperature">--.-</strong><span class="unit">℃</span></div>
-        <p id="weather">取得中</p>
-      </div>
-      <div id="judgementBox" class="judgement normal">
-        <span>総合判定</span><strong id="judgement">確認中</strong>
-      </div>
-    </section>
-
-    <section class="metrics" aria-label="気象指標">
-      <article><h2>降水確率</h2><p><strong id="rainProbability">--</strong><span>%</span></p></article>
-      <article><h2>現在の降水量</h2><p><strong id="precipitation">--.-</strong><span> mm/h</span></p></article>
-      <article><h2>風速</h2><p><strong id="windSpeed">--.-</strong><span> m/s</span></p></article>
-      <article><h2>最低気温</h2><p><strong id="minTemperature">--.-</strong><span>℃</span></p></article>
-      <article><h2>日没時刻</h2><p><strong id="sunset">--:--</strong></p></article>
-    </section>
-
-    <section class="details">
-      <article class="panel"><h2>発表・判定中の情報</h2><p id="activeInfo">情報を取得しています</p></article>
-      <article class="panel"><h2>表示ルール</h2><p>警報級は即時表示、注意情報は毎時00分から10分間表示</p></article>
-    </section>
-
-    <footer>
-      <div><span>出典: 気象庁・Open-Meteoの公開情報を加工して表示</span><span>データ生成: <time id="generatedAt">--</time></span></div>
-      <p>本表示は補助情報です。現場責任者の指示、会社の安全基準、自治体・気象庁の公式情報を優先してください。</p>
-    </footer>
-  </main>
-  <aside id="alertOverlay" class="overlay" hidden><div><p>安全情報</p><strong id="overlayTitle"></strong><span id="overlayCount"></span></div></aside>
-  <script src="assets/app.js?v=1"></script>
-</body>
-</html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta name="color-scheme" content="light"><title>青梅地域 安全・気象情報</title><link rel="stylesheet" href="assets/style.css?v=3"></head>
+<body><main id="stage" aria-live="polite">
+<header class="topbar"><h1>青梅地域 安全・気象情報</h1><div class="topright"><time id="clock">----/--/-- --:--:--</time><span id="connection" class="status delay">● 通信確認中</span></div></header>
+<section class="hero panel"><div class="current"><h2>現在の気象状況</h2><div class="temperature-line"><strong id="temperature">--.-</strong><span class="temp-unit">℃</span></div><p id="weather">取得中</p></div><div id="judgementBox" class="judgement normal"><span>総合判定</span><strong id="judgement">確認中</strong></div></section>
+<section class="metrics">
+<article><h2>降水確率</h2><p><strong id="rainProbability">--</strong><span class="unit">%</span></p></article>
+<article><h2>現在の降水量</h2><p><strong id="precipitation">--.-</strong><span class="unit">mm/h</span></p></article>
+<article><h2>風速</h2><p><strong id="windSpeed">--.-</strong><span class="unit">m/s</span></p></article>
+<article><h2>最低気温</h2><p><strong id="minTemperature">--.-</strong><span class="unit">℃</span></p></article>
+<article><h2>日没時刻</h2><p><strong id="sunset">--:--</strong></p></article></section>
+<section class="details"><article class="panel"><h2>発表・判定中の情報</h2><p id="activeInfo">情報を取得しています</p></article><article class="panel"><h2>表示ルール</h2><p>警報級は即時表示、注意情報は毎時00分から10分間表示</p></article></section>
+<footer><div><span>出典: 気象庁・Open-Meteoの公開情報を加工して表示</span><span>データ生成: <time id="generatedAt">--</time></span></div><p>本表示は補助情報です。現場責任者の指示、会社の安全基準、自治体・気象庁の公式情報を優先してください。</p></footer>
+</main><aside id="alertOverlay" class="overlay" role="alert" aria-live="assertive" hidden><img id="overlayImage" alt=""><p id="overlayFallback"></p><span id="overlayCount"></span></aside><script src="assets/app.js?v=3"></script></body></html>
