@@ -1,0 +1,22 @@
+{
+  "display_name": "青梅地域",
+  "latitude": "SET_EXACT_LATITUDE",
+  "longitude": "SET_EXACT_LONGITUDE",
+  "timezone": "Asia/Tokyo",
+  "jma_warning_area_name": "青梅市",
+  "thresholds": {
+    "rain_probability": 60,
+    "low_temperature": 5,
+    "strong_wind": 10,
+    "storm_wind": 20,
+    "heavy_rain_per_hour": 10
+  },
+  "sunset_window_minutes": {
+    "before": 30,
+    "after": 10
+  },
+  "features": {
+    "landslide": false,
+    "inland_flooding_note": true
+  }
+}
