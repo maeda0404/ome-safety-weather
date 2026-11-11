@@ -1,25 +1,19 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-11T08:08:51.961799+00:00",
+  "generated_at": "2026-11-11T16:04:19.880826+00:00",
   "weather": {
-    "temperature": 12.3,
+    "temperature": 7.1,
     "precipitation": 0.0,
     "code": 1,
-    "wind_speed": 0.95,
+    "wind_speed": 0.82,
     "rain_probability": 0,
-    "min_temperature": 4.7,
-    "sunset": "16:38"
+    "min_temperature": 6.3,
+    "sunset": "16:37"
   },
-  "alerts": [
-    {
-      "key": "lowTemperature",
-      "title": "低温・凍結に注意",
-      "immediate": false
-    }
-  ],
+  "alerts": [],
   "judgement": {
-    "level": "caution",
-    "label": "注意情報あり"
+    "level": "normal",
+    "label": "通常"
   },
   "notes": [
     "土砂災害判定は対象外",
