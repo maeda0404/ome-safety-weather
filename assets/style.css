@@ -27,9 +27,10 @@ body {
   position: relative;
 }
 
-/* =========================
-   1920 x 1080 基準画面
-   ========================= */
+
+/* ==================================================
+   1920 × 1080 基準画面
+   ================================================== */
 
 #stage {
   position: absolute;
@@ -47,12 +48,14 @@ body {
 
   display: flex;
   flex-direction: column;
+
   gap: 10px;
 }
 
-/* =========================
-   上部タイトル
-   ========================= */
+
+/* ==================================================
+   ヘッダー
+   ================================================== */
 
 .topbar {
   height: 96px;
@@ -74,20 +77,24 @@ body {
 
   font-size: 48px;
   font-weight: 900;
+
+  line-height: 1;
 }
 
 .topright {
   display: flex;
   align-items: center;
+
   gap: 24px;
 
   font-size: 31px;
   font-weight: 900;
 }
 
-/* =========================
+
+/* ==================================================
    通信状態
-   ========================= */
+   ================================================== */
 
 .status {
   border: 4px solid;
@@ -117,9 +124,10 @@ body {
   border-color: var(--red);
 }
 
-/* =========================
+
+/* ==================================================
    共通パネル
-   ========================= */
+   ================================================== */
 
 .panel {
   background: var(--white);
@@ -128,114 +136,146 @@ body {
   border-radius: 18px;
 }
 
-/* =========================
+
+/* ==================================================
+   上段
    現在気象 ＋ 総合判定
-   ========================= */
+   ================================================== */
 
 .hero {
   height: 340px;
 
   display: grid;
+
+  /*
+     左側 52%
+     右側 48%
+  */
   grid-template-columns: 1.08fr 0.92fr;
 
-  padding: 29px 40px;
+  gap: 38px;
 
-  gap: 42px;
+  padding: 27px 40px;
 }
 
-/* =========================
+
+/* ==================================================
    現在の気象状況
-   ========================= */
+   ================================================== */
 
 .current {
   position: relative;
 
+  min-width: 0;
+
   padding-left: 24px;
 }
 
-/* 見出し */
+
+/* 現在の気象状況 */
 
 .current h2 {
+  position: absolute;
+
+  left: 24px;
+  top: 4px;
+
   margin: 0;
 
   font-size: 35px;
   font-weight: 900;
+
   line-height: 1;
 }
+
 
 /*
    天気
 
-   「現在の気象状況」の
-   すぐ下へ配置
+   左側に独立して配置。
+   気温とは重ねない。
 */
 
 .current p {
   position: absolute;
 
   left: 38px;
-  top: 53px;
+  top: 78px;
+
+  width: 180px;
 
   margin: 0;
 
-  font-size: 49px;
+  font-size: 50px;
   font-weight: 900;
+
   line-height: 1;
+
+  text-align: center;
 
   white-space: nowrap;
 }
 
+
 /*
    現在気温
 
-   左端ではなく、
-   気象状況ブロック中央寄りへ配置
+   天気の右隣を大きく使う。
 */
 
 .temperature-line {
   position: absolute;
 
-  left: 105px;
-  top: 92px;
+  left: 230px;
+  right: 10px;
+  top: 67px;
 
-  height: 210px;
+  height: 223px;
 
   display: flex;
+
   align-items: center;
+  justify-content: center;
 
   padding: 0;
 }
 
+
 /* 15.2 */
 
 .temperature-line strong {
-  font-size: 211px;
+  font-size: 205px;
   font-weight: 900;
 
-  line-height: 0.92;
+  line-height: 0.9;
 
   letter-spacing: -12px;
+
+  white-space: nowrap;
 }
+
 
 /* ℃ */
 
 .temp-unit {
-  margin-left: 17px;
-  margin-top: 56px;
+  margin-left: 18px;
+  margin-top: 59px;
 
-  font-size: 70px;
+  font-size: 69px;
   font-weight: 900;
 
   line-height: 1;
 }
 
-/* =========================
+
+/* ==================================================
    総合判定
-   ========================= */
+   ================================================== */
 
 .judgement {
   align-self: center;
 
+  width: 100%;
   height: 270px;
 
   border: 9px solid;
@@ -247,15 +287,18 @@ body {
   align-items: center;
   justify-content: center;
 
+  padding: 0 24px;
+
   background: #fff8e8;
 
-  padding: 22px 24px;
+  text-align: center;
 }
 
-/* 「総合判定」 */
+
+/* 総合判定 */
 
 .judgement span {
-  margin: 0 0 23px;
+  margin: 0 0 27px;
 
   font-size: 46px;
   font-weight: 900;
@@ -263,7 +306,8 @@ body {
   line-height: 1;
 }
 
-/* 「通常」「注意情報あり」「危険」 */
+
+/* 通常 / 注意情報あり / 危険 */
 
 .judgement strong {
   margin: 0;
@@ -274,6 +318,7 @@ body {
   line-height: 1;
 }
 
+
 /* 通常 */
 
 .judgement.normal {
@@ -281,6 +326,7 @@ body {
 
   background: #edf9f2;
 }
+
 
 /* 注意 */
 
@@ -290,6 +336,7 @@ body {
   background: #fff8e8;
 }
 
+
 /* 危険 */
 
 .judgement.danger {
@@ -298,9 +345,10 @@ body {
   background: #fff0f0;
 }
 
-/* =========================
+
+/* ==================================================
    5つの気象情報カード
-   ========================= */
+   ================================================== */
 
 .metrics {
   height: 250px;
@@ -329,7 +377,8 @@ body {
   padding: 14px 8px;
 }
 
-/* 項目名 */
+
+/* カード見出し */
 
 .metrics h2 {
   margin: 0 0 27px;
@@ -340,7 +389,8 @@ body {
   line-height: 1.05;
 }
 
-/* 数値・単位の行 */
+
+/* 数値の行 */
 
 .metrics p {
   margin: 0;
@@ -355,6 +405,7 @@ body {
   white-space: nowrap;
 }
 
+
 /* 数値 */
 
 .metrics strong {
@@ -366,6 +417,7 @@ body {
   letter-spacing: -2px;
 }
 
+
 /* % / mm/h / m/s / ℃ */
 
 .metrics .unit {
@@ -375,9 +427,10 @@ body {
   line-height: 1;
 }
 
-/* =========================
-   下段情報
-   ========================= */
+
+/* ==================================================
+   発表情報・表示ルール
+   ================================================== */
 
 .details {
   height: 155px;
@@ -405,11 +458,14 @@ body {
 
   font-size: 25px;
   font-weight: 900;
+
+  line-height: 1.25;
 }
 
-/* =========================
+
+/* ==================================================
    フッター
-   ========================= */
+   ================================================== */
 
 footer {
   height: 189px;
@@ -447,9 +503,10 @@ footer p {
   font-size: 19px;
 }
 
-/* =========================
-   注意喚起画像
-   ========================= */
+
+/* ==================================================
+   注意喚起 全画面画像
+   ================================================== */
 
 .overlay {
   position: fixed;
@@ -477,10 +534,13 @@ footer p {
   object-fit: contain;
 }
 
+
 /* 画像読込失敗時 */
 
 .overlay p {
   display: none;
+
+  margin: 0;
 
   font-size: 92px;
   font-weight: 900;
@@ -490,7 +550,8 @@ footer p {
   text-align: center;
 }
 
-/* 複数画像時の 1 / 2 表示 */
+
+/* 複数注意情報 */
 
 .overlay span {
   position: absolute;
@@ -508,9 +569,10 @@ footer p {
   font-size: 19px;
 }
 
-/* =========================
+
+/* ==================================================
    アクセシビリティ
-   ========================= */
+   ================================================== */
 
 @media (prefers-reduced-motion: reduce) {
   * {
