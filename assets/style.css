@@ -1,43 +1,519 @@
-/* draft-07: 天気を「現在の気象状況」の直下へ戻す */
-.current{
-  padding-left:24px;
-  position:relative;
-  display:block;
+:root {
+  --navy: #071a30;
+  --line: #234e70;
+  --bg: #eaf3f8;
+  --white: #ffffff;
+  --green: #087b48;
+  --amber: #ad5100;
+  --red: #a41111;
 }
-.current h2{
-  font-size:35px;
-  margin:0;
-  font-weight:900;
+
+* {
+  box-sizing: border-box;
 }
-.current p{
-  position:absolute;
-  left:14px;
-  top:52px;
-  margin:0;
-  font-size:49px;
-  font-weight:900;
-  line-height:1;
-  white-space:nowrap;
-  transform:none;
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: "Yu Gothic", Meiryo, sans-serif;
+  color: var(--navy);
 }
-.temperature-line{
-  height:220px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding-left:92px;
-  transform:translateY(34px);
+
+body {
+  position: relative;
 }
-.temperature-line strong{
-  font-size:211px;
-  line-height:.92;
-  letter-spacing:-12px;
-  font-weight:900;
+
+/* =========================
+   1920 x 1080 基準画面
+   ========================= */
+
+#stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+
+  width: 1920px;
+  height: 1080px;
+
+  transform-origin: center center;
+
+  background: var(--bg);
+
+  padding: 8px 22px 14px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.temp-unit{
-  font-size:70px;
-  font-weight:900;
-  margin:56px 0 0 17px;
+
+/* =========================
+   上部タイトル
+   ========================= */
+
+.topbar {
+  height: 96px;
+
+  background: var(--white);
+
+  border-radius: 16px;
+  border-bottom: 8px solid #174f7d;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 30px;
 }
-.judgement span{font-size:46px}
-.judgement strong{font-size:88px}
+
+.topbar h1 {
+  margin: 0;
+
+  font-size: 48px;
+  font-weight: 900;
+}
+
+.topright {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+
+  font-size: 31px;
+  font-weight: 900;
+}
+
+/* =========================
+   通信状態
+   ========================= */
+
+.status {
+  border: 4px solid;
+
+  padding: 8px 18px;
+
+  border-radius: 15px;
+
+  font-size: 27px;
+  font-weight: 900;
+
+  white-space: nowrap;
+}
+
+.status.normal {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.status.delay {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.status.error {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+/* =========================
+   共通パネル
+   ========================= */
+
+.panel {
+  background: var(--white);
+
+  border: 7px solid var(--line);
+  border-radius: 18px;
+}
+
+/* =========================
+   現在気象 ＋ 総合判定
+   ========================= */
+
+.hero {
+  height: 340px;
+
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+
+  padding: 29px 40px;
+
+  gap: 42px;
+}
+
+/* =========================
+   現在の気象状況
+   ========================= */
+
+.current {
+  position: relative;
+
+  padding-left: 24px;
+}
+
+/* 見出し */
+
+.current h2 {
+  margin: 0;
+
+  font-size: 35px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/*
+   天気
+
+   「現在の気象状況」の
+   すぐ下へ配置
+*/
+
+.current p {
+  position: absolute;
+
+  left: 38px;
+  top: 53px;
+
+  margin: 0;
+
+  font-size: 49px;
+  font-weight: 900;
+  line-height: 1;
+
+  white-space: nowrap;
+}
+
+/*
+   現在気温
+
+   左端ではなく、
+   気象状況ブロック中央寄りへ配置
+*/
+
+.temperature-line {
+  position: absolute;
+
+  left: 105px;
+  top: 92px;
+
+  height: 210px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0;
+}
+
+/* 15.2 */
+
+.temperature-line strong {
+  font-size: 211px;
+  font-weight: 900;
+
+  line-height: 0.92;
+
+  letter-spacing: -12px;
+}
+
+/* ℃ */
+
+.temp-unit {
+  margin-left: 17px;
+  margin-top: 56px;
+
+  font-size: 70px;
+  font-weight: 900;
+
+  line-height: 1;
+}
+
+/* =========================
+   総合判定
+   ========================= */
+
+.judgement {
+  align-self: center;
+
+  height: 270px;
+
+  border: 9px solid;
+  border-radius: 32px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  background: #fff8e8;
+
+  padding: 22px 24px;
+}
+
+/* 「総合判定」 */
+
+.judgement span {
+  margin: 0 0 23px;
+
+  font-size: 46px;
+  font-weight: 900;
+
+  line-height: 1;
+}
+
+/* 「通常」「注意情報あり」「危険」 */
+
+.judgement strong {
+  margin: 0;
+
+  font-size: 88px;
+  font-weight: 900;
+
+  line-height: 1;
+}
+
+/* 通常 */
+
+.judgement.normal {
+  color: var(--green);
+
+  background: #edf9f2;
+}
+
+/* 注意 */
+
+.judgement.caution {
+  color: var(--amber);
+
+  background: #fff8e8;
+}
+
+/* 危険 */
+
+.judgement.danger {
+  color: var(--red);
+
+  background: #fff0f0;
+}
+
+/* =========================
+   5つの気象情報カード
+   ========================= */
+
+.metrics {
+  height: 250px;
+
+  display: grid;
+
+  grid-template-columns: repeat(5, 1fr);
+
+  gap: 10px;
+}
+
+.metrics article {
+  background: var(--white);
+
+  border: 7px solid var(--line);
+  border-radius: 17px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  padding: 14px 8px;
+}
+
+/* 項目名 */
+
+.metrics h2 {
+  margin: 0 0 27px;
+
+  font-size: 36px;
+  font-weight: 900;
+
+  line-height: 1.05;
+}
+
+/* 数値・単位の行 */
+
+.metrics p {
+  margin: 0;
+
+  display: flex;
+
+  align-items: baseline;
+  justify-content: center;
+
+  gap: 8px;
+
+  white-space: nowrap;
+}
+
+/* 数値 */
+
+.metrics strong {
+  font-size: 90px;
+  font-weight: 900;
+
+  line-height: 0.92;
+
+  letter-spacing: -2px;
+}
+
+/* % / mm/h / m/s / ℃ */
+
+.metrics .unit {
+  font-size: 47px;
+  font-weight: 900;
+
+  line-height: 1;
+}
+
+/* =========================
+   下段情報
+   ========================= */
+
+.details {
+  height: 155px;
+
+  display: grid;
+
+  grid-template-columns: 1.3fr 1fr;
+
+  gap: 10px;
+}
+
+.details article {
+  padding: 18px 27px;
+}
+
+.details h2 {
+  margin: 0;
+
+  font-size: 29px;
+  font-weight: 900;
+}
+
+.details p {
+  margin: 19px 0 0;
+
+  font-size: 25px;
+  font-weight: 900;
+}
+
+/* =========================
+   フッター
+   ========================= */
+
+footer {
+  height: 189px;
+
+  background: #0d3454;
+  color: var(--white);
+
+  border-radius: 15px;
+
+  padding: 14px 20px;
+
+  font-weight: 900;
+}
+
+footer > div {
+  display: flex;
+  justify-content: space-between;
+
+  font-size: 19px;
+}
+
+footer p {
+  height: 87px;
+
+  margin: 48px 0 0;
+
+  background: var(--white);
+  color: var(--navy);
+
+  border-radius: 8px;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 19px;
+}
+
+/* =========================
+   注意喚起画像
+   ========================= */
+
+.overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 20;
+
+  display: grid;
+  place-items: center;
+
+  overflow: hidden;
+
+  background: var(--bg);
+}
+
+.overlay[hidden] {
+  display: none;
+}
+
+.overlay img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+/* 画像読込失敗時 */
+
+.overlay p {
+  display: none;
+
+  font-size: 92px;
+  font-weight: 900;
+
+  color: var(--red);
+
+  text-align: center;
+}
+
+/* 複数画像時の 1 / 2 表示 */
+
+.overlay span {
+  position: absolute;
+
+  right: 20px;
+  bottom: 12px;
+
+  padding: 7px 14px;
+
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--white);
+
+  border-radius: 9px;
+
+  font-size: 19px;
+}
+
+/* =========================
+   アクセシビリティ
+   ========================= */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+  }
+}
