@@ -69,7 +69,6 @@ body {
   border-bottom: 8px solid #174f7d;
 
   display: flex;
-
   align-items: center;
   justify-content: space-between;
 
@@ -81,13 +80,11 @@ body {
 
   font-size: 48px;
   font-weight: 900;
-
   line-height: 1;
 }
 
 .topright {
   display: flex;
-
   align-items: center;
 
   gap: 24px;
@@ -138,7 +135,6 @@ body {
   background: var(--white);
 
   border: 7px solid var(--line);
-
   border-radius: 18px;
 }
 
@@ -193,22 +189,20 @@ body {
 
 /* ==================================================
    天気
+   上段左エリアの上下中央へ
    ================================================== */
-
-/*
-   「快晴」などの天気を
-   左端ではなく中央寄りへ配置
-*/
 
 .current p {
   position: absolute;
 
   left: 128px;
-  top: 81px;
+  top: 162px;
 
   width: 220px;
 
   margin: 0;
+
+  transform: translateY(-50%);
 
   font-size: 50px;
   font-weight: 900;
@@ -224,10 +218,6 @@ body {
 /* ==================================================
    現在気温
    ================================================== */
-
-/*
-   天気の右側へ気温を大きく配置
-*/
 
 .temperature-line {
   position: absolute;
@@ -247,7 +237,7 @@ body {
 }
 
 
-/* 16.1 */
+/* 気温数値 */
 
 .temperature-line strong {
   font-size: 238px;
@@ -285,7 +275,6 @@ body {
   height: 270px;
 
   border: 9px solid;
-
   border-radius: 32px;
 
   display: flex;
@@ -302,7 +291,7 @@ body {
 }
 
 
-/* 「総合判定」 */
+/* 総合判定 見出し */
 
 .judgement span {
   margin: 0 0 27px;
@@ -314,7 +303,7 @@ body {
 }
 
 
-/* 「通常 / 注意情報あり / 危険」 */
+/* 通常 / 注意情報あり / 危険 */
 
 .judgement strong {
   margin: 0;
@@ -330,6 +319,7 @@ body {
 
 .judgement.normal {
   color: var(--green);
+  border-color: var(--green);
 
   background: #edf9f2;
 }
@@ -339,6 +329,7 @@ body {
 
 .judgement.caution {
   color: var(--amber);
+  border-color: var(--amber);
 
   background: #fff8e8;
 }
@@ -348,6 +339,7 @@ body {
 
 .judgement.danger {
   color: var(--red);
+  border-color: var(--red);
 
   background: #fff0f0;
 }
@@ -371,7 +363,6 @@ body {
   background: var(--white);
 
   border: 7px solid var(--line);
-
   border-radius: 17px;
 
   display: flex;
@@ -491,7 +482,6 @@ footer {
 
 footer > div {
   display: flex;
-
   justify-content: space-between;
 
   font-size: 19px;
@@ -508,7 +498,6 @@ footer p {
   border-radius: 8px;
 
   display: grid;
-
   place-items: center;
 
   font-size: 19px;
@@ -516,7 +505,7 @@ footer p {
 
 
 /* ==================================================
-   注意喚起の全画面画像
+   注意喚起 全画面表示
    ================================================== */
 
 .overlay {
@@ -527,7 +516,6 @@ footer p {
   z-index: 20;
 
   display: grid;
-
   place-items: center;
 
   overflow: hidden;
@@ -548,7 +536,7 @@ footer p {
 
 
 /* ==================================================
-   画像読込失敗時
+   注意画像読込失敗時
    ================================================== */
 
 .overlay p {
@@ -566,8 +554,7 @@ footer p {
 
 
 /* ==================================================
-   複数注意喚起時
-   例：1 / 2
+   複数注意情報表示
    ================================================== */
 
 .overlay span {
@@ -592,7 +579,9 @@ footer p {
    ================================================== */
 
 @media (prefers-reduced-motion: reduce) {
+
   * {
     animation: none !important;
   }
+
 }
