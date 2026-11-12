@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-12T10:52:17.993017+00:00",
+  "generated_at": "2026-11-12T11:02:22.839114+00:00",
   "weather": {
-    "temperature": 11.5,
+    "temperature": 11.3,
     "precipitation": 0.0,
     "code": 0,
     "wind_speed": 1.35,
