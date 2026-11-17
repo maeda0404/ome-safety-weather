@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-17T03:42:17.088677+00:00",
+  "generated_at": "2026-11-17T04:12:16.767921+00:00",
   "weather": {
-    "temperature": 9.6,
+    "temperature": 9.5,
     "precipitation": 0.2,
     "code": 53,
     "wind_speed": 1.2,
