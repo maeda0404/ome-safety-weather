@@ -1,19 +1,25 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-17T01:42:17.890787+00:00",
+  "generated_at": "2026-11-17T01:52:16.280301+00:00",
   "weather": {
     "temperature": 10.6,
     "precipitation": 0.0,
     "code": 3,
-    "wind_speed": 1.33,
-    "rain_probability": 38,
+    "wind_speed": 1.22,
+    "rain_probability": 64,
     "min_temperature": 8.3,
     "sunset": "16:34"
   },
-  "alerts": [],
+  "alerts": [
+    {
+      "key": "rainProbability",
+      "title": "降水確率が高くなっています",
+      "immediate": false
+    }
+  ],
   "judgement": {
-    "level": "normal",
-    "label": "通常"
+    "level": "caution",
+    "label": "注意情報あり"
   },
   "notes": [
     "土砂災害判定は対象外",
