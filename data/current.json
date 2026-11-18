@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-18T10:52:18.485286+00:00",
+  "generated_at": "2026-11-18T11:52:19.719764+00:00",
   "weather": {
-    "temperature": 14.3,
+    "temperature": 14.1,
     "precipitation": 0.0,
-    "code": 1,
-    "wind_speed": 1.44,
-    "rain_probability": 0,
+    "code": 0,
+    "wind_speed": 1.84,
+    "rain_probability": 2,
     "min_temperature": 8.4,
     "sunset": "16:34"
   },
