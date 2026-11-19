@@ -543,7 +543,6 @@ def parse_warning_xml(raw_xml):
             report_datetime = (
                 element.text.strip()
             )
-             break
 
     inactive_statuses = {
         "解除",
@@ -568,10 +567,10 @@ def parse_warning_xml(raw_xml):
                 "Name",
             )
 
-            warning_status = hild_text(
-                kind,
-                "Status",
-            )
+            warning_status = child_text(
+    kind,
+    "Status",
+)
 
             if not warning_name:
                 continue
