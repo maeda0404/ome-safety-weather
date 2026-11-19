@@ -1,22 +1,54 @@
 {
-  "schema_version": 1,
-  "generated_at": "2026-11-19T01:02:18.852864+00:00",
+  "schema_version": 2,
+  "generated_at": "2026-11-19T02:04:31.766674Z",
+  "location": {
+    "name": "青梅・浄水場現場",
+    "latitude": 35.780514,
+    "longitude": 139.320413
+  },
   "weather": {
-    "temperature": 16.6,
+    "observed_at": "2026-11-19T11:00",
+    "temperature": 17.5,
     "precipitation": 0.0,
     "code": 0,
-    "wind_speed": 1.75,
+    "wind_speed": 3.65,
     "rain_probability": 0,
     "min_temperature": 8.2,
-    "sunset": "16:33"
+    "sunset": "2026-11-19T16:33"
   },
   "alerts": [],
   "judgement": {
     "level": "normal",
     "label": "通常"
   },
+  "official_warnings": {
+    "heavyRain": false,
+    "storm": false,
+    "strongWind": false,
+    "thunder": false,
+    "thunderForecast": false,
+    "dry": false
+  },
+  "warning_source": "jma-vpws50",
+  "warning_fetch_error": null,
+  "warning_debug": {
+    "type": "VPWS50",
+    "feed_timestamp": "20261119020210",
+    "report_datetime": "2026-11-19T11:00:00+09:00",
+    "active_names": [],
+    "active_keys": [],
+    "source_file": "20261119020210_0_VPWS50_010000.xml",
+    "target_area_codes": [
+      "1320500"
+    ],
+    "target_area_names": [
+      "青梅市"
+    ]
+  },
+  "thunder_forecast_error": null,
   "notes": [
-    "土砂災害判定は対象外",
+    "小作駅近くの市街地にある浄水場現場のため、土砂災害判定は対象外",
+    "内陸現場のため、波浪・高潮判定は対象外",
     "気象取得地点: 35.780514, 139.320413"
   ]
 }
