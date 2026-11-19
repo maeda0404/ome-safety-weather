@@ -4,14 +4,17 @@
 
   const $ = (id) => document.getElementById(id);
 
-  const CACHE_KEY = 'ome_safety_last_v4';
+  const CACHE_KEY = 'ome_safety_last_v5';
 
   const REFRESH_MS = 5 * 60 * 1000;
   const ROTATION_MS = 20 * 1000;
 
   let alerts = [];
+
   let alertIndex = 0;
-  let rotationTimer = null;
+  let lastRotationTime = 0;
+  let lastQueueSignature = '';
+  let lastDisplayedKey = '';
 
   const IMAGE_MAP = {
     dry: 'images/dry-warning.png',
@@ -25,6 +28,7 @@
     thunder: 'images/thunder.png',
     thunderForecast: 'images/thunder-forecast.png'
   };
+
 
   // =====================================================
   // 画面サイズ調整
@@ -65,6 +69,100 @@
 
 
   // =====================================================
+  // 日時変換
+  // =====================================================
+
+  function parseDate(value) {
+
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(value);
+
+    if (!Number.isFinite(date.getTime())) {
+      return null;
+    }
+
+    return date;
+  }
+
+
+  function formatDateTime(value) {
+
+    const date = parseDate(value);
+
+    if (!date) {
+      return '--';
+    }
+
+    return new Intl.DateTimeFormat(
+      'ja-JP',
+      {
+        timeZone: 'Asia/Tokyo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }
+    ).format(date);
+  }
+
+
+  function formatTime(value) {
+
+    const date = parseDate(value);
+
+    if (!date) {
+      return '--:--';
+    }
+
+    return new Intl.DateTimeFormat(
+      'ja-JP',
+      {
+        timeZone: 'Asia/Tokyo',
+        hour: '2-digit',
+        minute: '2-digit'
+      }
+    ).format(date);
+  }
+
+
+  function getJapanMinute() {
+
+    const parts =
+      new Intl.DateTimeFormat(
+        'en-CA',
+        {
+          timeZone: 'Asia/Tokyo',
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23'
+        }
+      ).formatToParts(new Date());
+
+    const minutePart =
+      parts.find(
+        (part) => part.type === 'minute'
+      );
+
+    const minute =
+      Number(
+        minutePart
+          ? minutePart.value
+          : NaN
+      );
+
+    return Number.isFinite(minute)
+      ? minute
+      : 0;
+  }
+
+
+  // =====================================================
   // 天気コード
   // =====================================================
 
@@ -86,24 +184,27 @@
       71: '弱い雪',
       73: '雪',
       75: '強い雪',
+      77: '霧雪',
       80: 'にわか雨',
       81: 'にわか雨',
       82: '激しいにわか雨',
+      85: 'にわか雪',
+      86: '強いにわか雪',
       95: '雷雨',
       96: '雷雨',
       99: '激しい雷雨'
     };
 
-    return WEATHER_NAMES[code] || '不明';
+    return WEATHER_NAMES[Number(code)] || '不明';
   }
 
 
   // =====================================================
   // データ鮮度
   //
-  // 1時間未満     通信正常
-  // 1～3時間      更新遅延
-  // 3時間以上     通信失敗
+  // 1時間未満：通信正常
+  // 1～3時間：更新遅延
+  // 3時間以上：通信失敗
   // =====================================================
 
   function freshness(iso) {
@@ -118,28 +219,27 @@
       ];
     }
 
+    const ageMilliseconds =
+      Math.max(
+        0,
+        Date.now() - generatedTime
+      );
+
     const ageHours =
-      (
-        Date.now() -
-        generatedTime
-      ) / 3600000;
+      ageMilliseconds / 3600000;
 
     if (ageHours < 1) {
-
       return [
         '● 通信正常',
         'normal'
       ];
-
     }
 
     if (ageHours < 3) {
-
       return [
         '▲ 更新遅延',
         'delay'
       ];
-
     }
 
     return [
@@ -150,57 +250,82 @@
 
 
   // =====================================================
-  // 気象庁取得状態
+  // 気象庁情報の取得状態
   // =====================================================
+
+  function getWarningStatusElement() {
+
+    let status =
+      $('warningStatus');
+
+    if (status) {
+      return status;
+    }
+
+    const connection =
+      $('connection');
+
+    if (
+      !connection ||
+      !connection.parentNode
+    ) {
+      return null;
+    }
+
+    status =
+      document.createElement('span');
+
+    status.id =
+      'warningStatus';
+
+    status.style.marginLeft =
+      '12px';
+
+    status.style.padding =
+      '4px 10px';
+
+    status.style.borderRadius =
+      '8px';
+
+    status.style.fontWeight =
+      'bold';
+
+    status.style.whiteSpace =
+      'nowrap';
+
+    status.hidden =
+      true;
+
+    connection.parentNode.insertBefore(
+      status,
+      connection.nextSibling
+    );
+
+    return status;
+  }
+
 
   function updateWarningStatus(data) {
 
-    let status = $('warningStatus');
+    const status =
+      getWarningStatusElement();
 
-    // HTML側にwarningStatusが無ければ
-    // connectionの横へ自動生成する
     if (!status) {
-
-      const connection =
-        $('connection');
-
-      if (
-        !connection ||
-        !connection.parentNode
-      ) {
-        return;
-      }
-
-      status =
-        document.createElement('span');
-
-      status.id =
-        'warningStatus';
-
-      status.style.marginLeft =
-        '12px';
-
-      status.style.padding =
-        '4px 10px';
-
-      status.style.borderRadius =
-        '8px';
-
-      status.style.fontWeight =
-        'bold';
-
-      connection.parentNode.insertBefore(
-        status,
-        connection.nextSibling
-      );
+      return;
     }
 
-    if (
-      data.warning_fetch_error
-    ) {
+    const warningError =
+      data.warning_fetch_error ||
+      data.warningFetchError ||
+      null;
+
+    if (warningError) {
 
       status.textContent =
         '⚠ 警報情報取得失敗';
+
+      status.hidden =
+        false;
 
       status.style.display =
         'inline-block';
@@ -218,9 +343,288 @@
     }
 
     status.textContent = '';
+    status.hidden = true;
+    status.style.display = 'none';
+  }
 
-    status.style.display =
-      'none';
+
+  // =====================================================
+  // データ検証
+  // =====================================================
+
+  function isUsableData(data) {
+
+    if (
+      !data ||
+      !data.weather ||
+      !data.generated_at
+    ) {
+      return false;
+    }
+
+    const generatedTime =
+      new Date(
+        data.generated_at
+      ).getTime();
+
+    return Number.isFinite(
+      generatedTime
+    );
+  }
+
+
+  // =====================================================
+  // アラートの整形
+  // =====================================================
+
+  function normalizeAlerts(value) {
+
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .filter(
+        (alert) =>
+          alert &&
+          typeof alert.key === 'string' &&
+          typeof alert.title === 'string'
+      )
+      .map(
+        (alert) => ({
+          key: alert.key,
+          title: alert.title,
+          immediate: Boolean(
+            alert.immediate
+          ),
+          source: alert.source || ''
+        })
+      );
+  }
+
+
+  // =====================================================
+  // 表示対象のアラート取得
+  //
+  // immediate=true：
+  // 時刻に関係なく即時表示
+  //
+  // その他：
+  // 毎時00分～10分未満に表示
+  // =====================================================
+
+  function getOverlayAlerts() {
+
+    const urgent =
+      alerts.filter(
+        (alert) =>
+          Boolean(alert.immediate)
+      );
+
+    if (urgent.length > 0) {
+
+      // 即時情報がある場合は
+      // 即時情報を優先して表示する
+      return urgent;
+    }
+
+    const minute =
+      getJapanMinute();
+
+    if (
+      minute >= 0 &&
+      minute < 10
+    ) {
+      return alerts;
+    }
+
+    return [];
+  }
+
+
+  // =====================================================
+  // オーバーレイを閉じる
+  // =====================================================
+
+  function hideOverlay() {
+
+    const overlay =
+      $('alertOverlay');
+
+    if (overlay) {
+      overlay.hidden = true;
+    }
+
+    alertIndex = 0;
+    lastRotationTime = 0;
+    lastQueueSignature = '';
+    lastDisplayedKey = '';
+  }
+
+
+  // =====================================================
+  // 全画面警告表示
+  //
+  // setIntervalでローテーションせず、
+  // 時刻差で20秒経過を判定する。
+  //
+  // tick()から毎秒呼ばれても、
+  // ローテーション時刻はリセットされない。
+  // =====================================================
+
+  function showOverlay() {
+
+    const shown =
+      getOverlayAlerts();
+
+    const overlay =
+      $('alertOverlay');
+
+    if (!overlay) {
+      return;
+    }
+
+    if (!shown.length) {
+
+      hideOverlay();
+
+      return;
+    }
+
+    const signature =
+      shown
+        .map(
+          (alert) =>
+            `${alert.key}:${alert.title}`
+        )
+        .join('|');
+
+    const currentTime =
+      Date.now();
+
+    // 表示対象が変更された場合のみ
+    // 1枚目へ戻す
+    if (
+      signature !==
+      lastQueueSignature
+    ) {
+
+      alertIndex = 0;
+
+      lastRotationTime =
+        currentTime;
+
+      lastQueueSignature =
+        signature;
+
+      lastDisplayedKey = '';
+
+    } else if (
+      shown.length > 1 &&
+      currentTime -
+        lastRotationTime >=
+        ROTATION_MS
+    ) {
+
+      // 20秒経過した場合だけ
+      // 次の画像へ進める
+      alertIndex =
+        (
+          alertIndex + 1
+        ) %
+        shown.length;
+
+      lastRotationTime =
+        currentTime;
+    }
+
+    // アラート数が途中で減った場合の保険
+    alertIndex %=
+      shown.length;
+
+    const alert =
+      shown[alertIndex];
+
+    const image =
+      $('overlayImage');
+
+    const fallback =
+      $('overlayFallback');
+
+    const overlayCount =
+      $('overlayCount');
+
+    overlay.hidden =
+      false;
+
+    if (fallback) {
+
+      fallback.textContent =
+        alert.title;
+
+      fallback.style.display =
+        'none';
+    }
+
+    if (image) {
+
+      image.alt =
+        alert.title;
+
+      image.style.display =
+        'block';
+
+      image.onerror = () => {
+
+        image.style.display =
+          'none';
+
+        if (fallback) {
+          fallback.style.display =
+            'block';
+        }
+      };
+
+      const imagePath =
+        IMAGE_MAP[alert.key];
+
+      if (imagePath) {
+
+        // 同じ画像を毎秒再設定しない
+        // 不要な再読込やちらつきを防止する
+        if (
+          lastDisplayedKey !==
+          alert.key
+        ) {
+
+          image.src =
+            `${imagePath}?v=6`;
+
+          lastDisplayedKey =
+            alert.key;
+        }
+
+      } else {
+
+        image.style.display =
+          'none';
+
+        lastDisplayedKey = '';
+
+        if (fallback) {
+          fallback.style.display =
+            'block';
+        }
+      }
+    }
+
+    if (overlayCount) {
+
+      overlayCount.textContent =
+        shown.length > 1
+          ? `${alertIndex + 1} / ${shown.length}`
+          : '';
+    }
   }
 
 
@@ -230,10 +634,7 @@
 
   function render(data) {
 
-    if (
-      !data ||
-      !data.weather
-    ) {
+    if (!isUsableData(data)) {
       return;
     }
 
@@ -272,96 +673,15 @@
         weather.min_temperature
       );
 
-    // Python側では
-    // 2026-11-19T16:32
-    // の形式で出力されるため
-    // HH:MMだけ表示
-    if (weather.sunset) {
+    $('sunset').textContent =
+      formatTime(
+        weather.sunset
+      );
 
-      const sunsetDate =
-        new Date(
-          weather.sunset
-        );
-
-      if (
-        Number.isFinite(
-          sunsetDate.getTime()
-        )
-      ) {
-
-        $('sunset').textContent =
-          new Intl.DateTimeFormat(
-            'ja-JP',
-            {
-              timeZone: 'Asia/Tokyo',
-              hour: '2-digit',
-              minute: '2-digit'
-            }
-          ).format(
-            sunsetDate
-          );
-
-      } else {
-
-        $('sunset').textContent =
-          weather.sunset;
-      }
-
-    } else {
-
-      $('sunset').textContent =
-        '--:--';
-    }
-
-
-    // ===================================================
-    // データ生成時刻
-    // ===================================================
-
-    const generatedAt =
-      data.generated_at;
-
-    if (generatedAt) {
-
-      const generatedDate =
-        new Date(
-          generatedAt
-        );
-
-      if (
-        Number.isFinite(
-          generatedDate.getTime()
-        )
-      ) {
-
-        $('generatedAt').textContent =
-          new Intl.DateTimeFormat(
-            'ja-JP',
-            {
-              timeZone: 'Asia/Tokyo',
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              weekday: 'short',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit'
-            }
-          ).format(
-            generatedDate
-          );
-
-      } else {
-
-        $('generatedAt').textContent =
-          '--';
-      }
-
-    } else {
-
-      $('generatedAt').textContent =
-        '--';
-    }
+    $('generatedAt').textContent =
+      formatDateTime(
+        data.generated_at
+      );
 
 
     // ===================================================
@@ -372,7 +692,7 @@
       connectionText,
       connectionClass
     ] = freshness(
-      generatedAt
+      data.generated_at
     );
 
     $('connection').textContent =
@@ -387,21 +707,28 @@
     // ===================================================
 
     alerts =
-      Array.isArray(data.alerts)
-        ? data.alerts
-        : [];
+      normalizeAlerts(
+        data.alerts
+      );
 
 
     // ===================================================
     // 総合判定
     // ===================================================
 
+    const judgement =
+      data.judgement || {};
+
     const level =
-      data.judgement?.level ||
-      'normal';
+      judgement.level ||
+      (
+        alerts.length
+          ? 'caution'
+          : 'normal'
+      );
 
     const label =
-      data.judgement?.label ||
+      judgement.label ||
       (
         alerts.length
           ? '注意情報あり'
@@ -416,7 +743,7 @@
 
 
     // ===================================================
-    // 発表・判定中の情報
+    // 発表・判定中情報
     // ===================================================
 
     $('activeInfo').textContent =
@@ -431,7 +758,7 @@
 
 
     // ===================================================
-    // 気象庁取得エラー
+    // 気象庁情報の取得状態
     // ===================================================
 
     updateWarningStatus(
@@ -440,175 +767,10 @@
 
 
     // ===================================================
-    // 全画面注意表示
+    // 全画面警告
     // ===================================================
 
     showOverlay();
-  }
-
-
-  // =====================================================
-  // 全画面注意表示
-  //
-  // immediate = true
-  // → 時刻に関係なく即時表示
-  //
-  // その他
-  // → 毎時00分～10分のみ表示
-  // =====================================================
-
-  function showOverlay() {
-
-    if (rotationTimer) {
-
-      clearInterval(
-        rotationTimer
-      );
-
-      rotationTimer =
-        null;
-    }
-
-    const urgent =
-      alerts.filter(
-        (alert) =>
-          Boolean(
-            alert.immediate
-          )
-      );
-
-    const now =
-      new Date();
-
-    const minute =
-      Number(
-        new Intl.DateTimeFormat(
-          'en-CA',
-          {
-            timeZone: 'Asia/Tokyo',
-            minute: '2-digit'
-          }
-        ).format(now)
-      );
-
-    let shown = [];
-
-    // 警報級・日没がある場合は
-    // 即時項目だけを優先表示
-    if (urgent.length) {
-
-      shown = urgent;
-
-    } else if (
-      minute >= 0 &&
-      minute < 10
-    ) {
-
-      // 注意情報は毎時00～10分
-      shown = alerts;
-
-    }
-
-    const overlay =
-      $('alertOverlay');
-
-    if (!shown.length) {
-
-      overlay.hidden =
-        true;
-
-      alertIndex = 0;
-
-      return;
-    }
-
-    alertIndex = 0;
-
-
-    // ===================================================
-    // 画像描画
-    // ===================================================
-
-    const draw = () => {
-
-      const alert =
-        shown[alertIndex];
-
-      const image =
-        $('overlayImage');
-
-      const fallback =
-        $('overlayFallback');
-
-      overlay.hidden =
-        false;
-
-      fallback.textContent =
-        alert.title;
-
-      fallback.style.display =
-        'none';
-
-      image.style.display =
-        'block';
-
-      image.alt =
-        alert.title;
-
-      image.onerror = () => {
-
-        image.style.display =
-          'none';
-
-        fallback.style.display =
-          'block';
-      };
-
-      const imagePath =
-        IMAGE_MAP[
-          alert.key
-        ];
-
-      if (imagePath) {
-
-        image.src =
-          `${imagePath}?v=5`;
-
-      } else {
-
-        image.style.display =
-          'none';
-
-        fallback.style.display =
-          'block';
-      }
-
-      $('overlayCount').textContent =
-        shown.length > 1
-          ? `${alertIndex + 1} / ${shown.length}`
-          : '';
-
-      alertIndex =
-        (
-          alertIndex + 1
-        ) %
-        shown.length;
-    };
-
-
-    // 最初の1枚を即表示
-    draw();
-
-
-    // 複数ある場合は20秒ごとに切替
-    if (shown.length > 1) {
-
-      rotationTimer =
-        setInterval(
-          draw,
-          ROTATION_MS
-        );
-    }
   }
 
 
@@ -652,9 +814,12 @@
         return null;
       }
 
-      return JSON.parse(
-        raw
-      );
+      const cached =
+        JSON.parse(raw);
+
+      return isUsableData(cached)
+        ? cached
+        : null;
 
     } catch (error) {
 
@@ -694,40 +859,16 @@
       const data =
         await response.json();
 
-      if (
-        !data ||
-        !data.weather ||
-        !data.generated_at
-      ) {
+      if (!isUsableData(data)) {
 
         throw new Error(
           'current.jsonの形式が不正です'
         );
       }
 
-      const generatedTime =
-        new Date(
-          data.generated_at
-        ).getTime();
+      saveCache(data);
 
-      if (
-        !Number.isFinite(
-          generatedTime
-        )
-      ) {
-
-        throw new Error(
-          'generated_atが不正です'
-        );
-      }
-
-      saveCache(
-        data
-      );
-
-      render(
-        data
-      );
+      render(data);
 
     } catch (error) {
 
@@ -736,14 +877,12 @@
         error
       );
 
-      const last =
+      const cached =
         loadCache();
 
-      if (last) {
+      if (cached) {
 
-        render(
-          last
-        );
+        render(cached);
 
         $('connection').textContent =
           '▲ 更新遅延';
@@ -753,6 +892,10 @@
 
       } else {
 
+        alerts = [];
+
+        hideOverlay();
+
         $('connection').textContent =
           '× データなし';
 
@@ -761,6 +904,12 @@
 
         $('activeInfo').textContent =
           '最新情報を取得できていません';
+
+        $('judgement').textContent =
+          '確認中';
+
+        $('judgementBox').className =
+          'judgement normal';
       }
     }
   }
@@ -794,8 +943,13 @@
   // =====================================================
   // 毎秒処理
   //
-  // 00分への切替・10分での解除・日没表示などを
-  // データ再取得を待たず反映させる
+  // ・時計更新
+  // ・00分で注意情報表示開始
+  // ・10分で注意情報表示終了
+  // ・20秒ごとの画像切替
+  //
+  // タイマーを再生成しないため、
+  // ローテーションは毎秒リセットされない。
   // =====================================================
 
   function tick() {
@@ -817,31 +971,29 @@
 
   fit();
 
-  // 起動直後にキャッシュがあれば先に表示
+  // 保存済みデータがあれば
+  // 通信完了を待たず先に表示する
   const cachedData =
     loadCache();
 
   if (cachedData) {
-
-    render(
-      cachedData
-    );
+    render(cachedData);
   }
 
   // 最新データ取得
   load();
 
-  clock();
+  // 初回時計・オーバーレイ更新
+  tick();
 
-  // 時計・表示タイミング確認
-  setInterval(
+  // 毎秒更新
+  window.setInterval(
     tick,
     1000
   );
 
-  // 気象データ取得
-  // 5分間隔
-  setInterval(
+  // 5分ごとに最新JSONを取得
+  window.setInterval(
     load,
     REFRESH_MS
   );
