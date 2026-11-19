@@ -9,6 +9,8 @@
   const REFRESH_MS = 5 * 60 * 1000;
   const ROTATION_MS = 20 * 1000;
 
+  let currentData = null;
+
   let alerts = [];
 
   let alertIndex = 0;
@@ -16,17 +18,44 @@
   let lastQueueSignature = '';
   let lastDisplayedKey = '';
 
+  let fetchFailed = false;
+
+
+  // =====================================================
+  // 画像
+  // =====================================================
+
   const IMAGE_MAP = {
-    dry: 'images/dry-warning.png',
-    dryWarning: 'images/dry-warning.png',
-    rainProbability: 'images/rain-probability.png',
-    lowTemperature: 'images/low-temperature.png',
-    heavyRain: 'images/heavy-rain.png',
-    sunset: 'images/sunset.png',
-    strongWind: 'images/strong-wind.png',
-    storm: 'images/storm.png',
-    thunder: 'images/thunder.png',
-    thunderForecast: 'images/thunder-forecast.png'
+
+    dry:
+      'images/dry-warning.png',
+
+    dryWarning:
+      'images/dry-warning.png',
+
+    rainProbability:
+      'images/rain-probability.png',
+
+    lowTemperature:
+      'images/low-temperature.png',
+
+    heavyRain:
+      'images/heavy-rain.png',
+
+    sunset:
+      'images/sunset.png',
+
+    strongWind:
+      'images/strong-wind.png',
+
+    storm:
+      'images/storm.png',
+
+    thunder:
+      'images/thunder.png',
+
+    thunderForecast:
+      'images/thunder-forecast.png'
   };
 
 
@@ -69,7 +98,7 @@
 
 
   // =====================================================
-  // 日時変換
+  // 日時処理
   // =====================================================
 
   function parseDate(value) {
@@ -142,11 +171,14 @@
           minute: '2-digit',
           hourCycle: 'h23'
         }
-      ).formatToParts(new Date());
+      ).formatToParts(
+        new Date()
+      );
 
     const minutePart =
       parts.find(
-        (part) => part.type === 'minute'
+        (part) =>
+          part.type === 'minute'
       );
 
     const minute =
@@ -169,50 +201,75 @@
   function weatherText(code) {
 
     const WEATHER_NAMES = {
+
       0: '快晴',
       1: '晴れ',
       2: '晴れ時々曇り',
       3: '曇り',
+
       45: '霧',
       48: '霧',
+
       51: '弱い霧雨',
       53: '霧雨',
       55: '強い霧雨',
+
       61: '弱い雨',
       63: '雨',
       65: '強い雨',
+
       71: '弱い雪',
       73: '雪',
       75: '強い雪',
       77: '霧雪',
+
       80: 'にわか雨',
       81: 'にわか雨',
       82: '激しいにわか雨',
+
       85: 'にわか雪',
       86: '強いにわか雪',
+
       95: '雷雨',
       96: '雷雨',
       99: '激しい雷雨'
     };
 
-    return WEATHER_NAMES[Number(code)] || '不明';
+    return (
+      WEATHER_NAMES[
+        Number(code)
+      ] ||
+      '不明'
+    );
   }
 
 
   // =====================================================
   // データ鮮度
   //
-  // 1時間未満：通信正常
-  // 1～3時間：更新遅延
-  // 3時間以上：通信失敗
+  // 1時間未満
+  // → 通信正常
+  //
+  // 1時間以上3時間未満
+  // → 更新遅延
+  //
+  // 3時間以上
+  // → 通信失敗
   // =====================================================
 
   function freshness(iso) {
 
     const generatedTime =
-      new Date(iso).getTime();
+      new Date(
+        iso
+      ).getTime();
 
-    if (!Number.isFinite(generatedTime)) {
+    if (
+      !Number.isFinite(
+        generatedTime
+      )
+    ) {
+
       return [
         '× 通信失敗',
         'error'
@@ -222,20 +279,32 @@
     const ageMilliseconds =
       Math.max(
         0,
-        Date.now() - generatedTime
+        Date.now() -
+          generatedTime
       );
 
     const ageHours =
-      ageMilliseconds / 3600000;
+      ageMilliseconds /
+      (
+        60 *
+        60 *
+        1000
+      );
 
-    if (ageHours < 1) {
+    if (
+      ageHours < 1
+    ) {
+
       return [
         '● 通信正常',
         'normal'
       ];
     }
 
-    if (ageHours < 3) {
+    if (
+      ageHours < 3
+    ) {
+
       return [
         '▲ 更新遅延',
         'delay'
@@ -250,7 +319,87 @@
 
 
   // =====================================================
-  // 気象庁情報の取得状態
+  // 通信状態更新
+  //
+  // currentDataのgenerated_atを
+  // 毎秒確認する
+  // =====================================================
+
+  function updateConnectionStatus() {
+
+    if (!currentData) {
+      return;
+    }
+
+    const [
+      freshnessText,
+      freshnessClass
+    ] = freshness(
+      currentData.generated_at
+    );
+
+    let text =
+      freshnessText;
+
+    let className =
+      freshnessClass;
+
+
+    // -----------------------------------------------
+    // JSON取得自体に失敗している場合
+    //
+    // キャッシュが1時間未満でも
+    // 「通信正常」とは表示しない。
+    //
+    // ただし3時間以上古い場合は
+    // 「通信失敗」を維持する。
+    // -----------------------------------------------
+
+    if (fetchFailed) {
+
+      if (
+        freshnessClass ===
+        'normal'
+      ) {
+
+        text =
+          '▲ 更新遅延';
+
+        className =
+          'delay';
+
+      } else if (
+        freshnessClass ===
+        'delay'
+      ) {
+
+        text =
+          '▲ 更新遅延';
+
+        className =
+          'delay';
+
+      } else {
+
+        text =
+          '× 通信失敗';
+
+        className =
+          'error';
+      }
+    }
+
+
+    $('connection').textContent =
+      text;
+
+    $('connection').className =
+      `status ${className}`;
+  }
+
+
+  // =====================================================
+  // 気象庁情報取得状態
   // =====================================================
 
   function getWarningStatusElement() {
@@ -273,7 +422,9 @@
     }
 
     status =
-      document.createElement('span');
+      document.createElement(
+        'span'
+      );
 
     status.id =
       'warningStatus';
@@ -342,14 +493,19 @@
       return;
     }
 
-    status.textContent = '';
-    status.hidden = true;
-    status.style.display = 'none';
+    status.textContent =
+      '';
+
+    status.hidden =
+      true;
+
+    status.style.display =
+      'none';
   }
 
 
   // =====================================================
-  // データ検証
+  // データが使用可能か確認
   // =====================================================
 
   function isUsableData(data) {
@@ -374,12 +530,14 @@
 
 
   // =====================================================
-  // アラートの整形
+  // アラート整形
   // =====================================================
 
   function normalizeAlerts(value) {
 
-    if (!Array.isArray(value)) {
+    if (
+      !Array.isArray(value)
+    ) {
       return [];
     }
 
@@ -387,30 +545,39 @@
       .filter(
         (alert) =>
           alert &&
-          typeof alert.key === 'string' &&
-          typeof alert.title === 'string'
+          typeof alert.key ===
+            'string' &&
+          typeof alert.title ===
+            'string'
       )
       .map(
         (alert) => ({
-          key: alert.key,
-          title: alert.title,
-          immediate: Boolean(
-            alert.immediate
-          ),
-          source: alert.source || ''
+          key:
+            alert.key,
+
+          title:
+            alert.title,
+
+          immediate:
+            Boolean(
+              alert.immediate
+            ),
+
+          source:
+            alert.source || ''
         })
       );
   }
 
 
   // =====================================================
-  // 表示対象のアラート取得
+  // オーバーレイ対象判定
   //
-  // immediate=true：
-  // 時刻に関係なく即時表示
+  // immediate=true
+  // → 時刻に関係なく表示
   //
-  // その他：
-  // 毎時00分～10分未満に表示
+  // 通常注意情報
+  // → 毎時00分～10分未満
   // =====================================================
 
   function getOverlayAlerts() {
@@ -418,13 +585,15 @@
     const urgent =
       alerts.filter(
         (alert) =>
-          Boolean(alert.immediate)
+          Boolean(
+            alert.immediate
+          )
       );
 
-    if (urgent.length > 0) {
-
-      // 即時情報がある場合は
-      // 即時情報を優先して表示する
+    // 警報級・日没を優先
+    if (
+      urgent.length > 0
+    ) {
       return urgent;
     }
 
@@ -443,7 +612,7 @@
 
 
   // =====================================================
-  // オーバーレイを閉じる
+  // オーバーレイ終了
   // =====================================================
 
   function hideOverlay() {
@@ -452,24 +621,29 @@
       $('alertOverlay');
 
     if (overlay) {
-      overlay.hidden = true;
+      overlay.hidden =
+        true;
     }
 
-    alertIndex = 0;
-    lastRotationTime = 0;
-    lastQueueSignature = '';
-    lastDisplayedKey = '';
+    alertIndex =
+      0;
+
+    lastRotationTime =
+      0;
+
+    lastQueueSignature =
+      '';
+
+    lastDisplayedKey =
+      '';
   }
 
 
   // =====================================================
-  // 全画面警告表示
+  // 全画面警告
   //
-  // setIntervalでローテーションせず、
-  // 時刻差で20秒経過を判定する。
-  //
-  // tick()から毎秒呼ばれても、
-  // ローテーション時刻はリセットされない。
+  // 毎秒実行されても、
+  // 20秒ローテーションをリセットしない
   // =====================================================
 
   function showOverlay() {
@@ -491,6 +665,8 @@
       return;
     }
 
+
+    // 現在の警告一覧を識別
     const signature =
       shown
         .map(
@@ -499,17 +675,23 @@
         )
         .join('|');
 
+
     const currentTime =
       Date.now();
 
-    // 表示対象が変更された場合のみ
+
+    // -----------------------------------------------
+    // 警告内容が変化した場合のみ
     // 1枚目へ戻す
+    // -----------------------------------------------
+
     if (
       signature !==
       lastQueueSignature
     ) {
 
-      alertIndex = 0;
+      alertIndex =
+        0;
 
       lastRotationTime =
         currentTime;
@@ -517,17 +699,23 @@
       lastQueueSignature =
         signature;
 
-      lastDisplayedKey = '';
+      lastDisplayedKey =
+        '';
+    }
 
-    } else if (
+
+    // -----------------------------------------------
+    // 警告内容が同じなら
+    // 20秒経過時だけ次へ進む
+    // -----------------------------------------------
+
+    else if (
       shown.length > 1 &&
       currentTime -
         lastRotationTime >=
         ROTATION_MS
     ) {
 
-      // 20秒経過した場合だけ
-      // 次の画像へ進める
       alertIndex =
         (
           alertIndex + 1
@@ -538,12 +726,16 @@
         currentTime;
     }
 
-    // アラート数が途中で減った場合の保険
+
+    // 配列変更時の保険
     alertIndex %=
       shown.length;
 
+
     const alert =
-      shown[alertIndex];
+      shown[
+        alertIndex
+      ];
 
     const image =
       $('overlayImage');
@@ -554,8 +746,14 @@
     const overlayCount =
       $('overlayCount');
 
+
     overlay.hidden =
       false;
+
+
+    // -----------------------------------------------
+    // 文字フォールバック
+    // -----------------------------------------------
 
     if (fallback) {
 
@@ -566,6 +764,11 @@
         'none';
     }
 
+
+    // -----------------------------------------------
+    // 画像
+    // -----------------------------------------------
+
     if (image) {
 
       image.alt =
@@ -574,31 +777,37 @@
       image.style.display =
         'block';
 
-      image.onerror = () => {
 
-        image.style.display =
-          'none';
+      image.onerror =
+        () => {
 
-        if (fallback) {
-          fallback.style.display =
-            'block';
-        }
-      };
+          image.style.display =
+            'none';
+
+          if (fallback) {
+
+            fallback.style.display =
+              'block';
+          }
+        };
+
 
       const imagePath =
-        IMAGE_MAP[alert.key];
+        IMAGE_MAP[
+          alert.key
+        ];
+
 
       if (imagePath) {
 
-        // 同じ画像を毎秒再設定しない
-        // 不要な再読込やちらつきを防止する
+        // 同じ画像を毎秒読み直さない
         if (
           lastDisplayedKey !==
           alert.key
         ) {
 
           image.src =
-            `${imagePath}?v=6`;
+            `${imagePath}?v=7`;
 
           lastDisplayedKey =
             alert.key;
@@ -609,14 +818,21 @@
         image.style.display =
           'none';
 
-        lastDisplayedKey = '';
+        lastDisplayedKey =
+          '';
 
         if (fallback) {
+
           fallback.style.display =
             'block';
         }
       }
     }
+
+
+    // -----------------------------------------------
+    // 1 / 3 等の表示
+    // -----------------------------------------------
 
     if (overlayCount) {
 
@@ -629,22 +845,35 @@
 
 
   // =====================================================
-  // データ表示
+  // メイン表示
   // =====================================================
 
   function render(data) {
 
-    if (!isUsableData(data)) {
+    if (
+      !isUsableData(data)
+    ) {
       return;
     }
 
+
+    currentData =
+      data;
+
+
     const weather =
       data.weather;
+
+
+    // ===================================================
+    // 気象
+    // ===================================================
 
     $('temperature').textContent =
       fmt(
         weather.temperature
       );
+
 
     $('weather').textContent =
       weather.text ||
@@ -652,54 +881,42 @@
         weather.code
       );
 
+
     $('rainProbability').textContent =
       fmt(
         weather.rain_probability,
         0
       );
 
+
     $('precipitation').textContent =
       fmt(
         weather.precipitation
       );
+
 
     $('windSpeed').textContent =
       fmt(
         weather.wind_speed
       );
 
+
     $('minTemperature').textContent =
       fmt(
         weather.min_temperature
       );
+
 
     $('sunset').textContent =
       formatTime(
         weather.sunset
       );
 
+
     $('generatedAt').textContent =
       formatDateTime(
         data.generated_at
       );
-
-
-    // ===================================================
-    // 通信状態
-    // ===================================================
-
-    const [
-      connectionText,
-      connectionClass
-    ] = freshness(
-      data.generated_at
-    );
-
-    $('connection').textContent =
-      connectionText;
-
-    $('connection').className =
-      `status ${connectionClass}`;
 
 
     // ===================================================
@@ -717,7 +934,9 @@
     // ===================================================
 
     const judgement =
-      data.judgement || {};
+      data.judgement ||
+      {};
+
 
     const level =
       judgement.level ||
@@ -727,6 +946,7 @@
           : 'normal'
       );
 
+
     const label =
       judgement.label ||
       (
@@ -735,8 +955,10 @@
           : '通常'
       );
 
+
     $('judgement').textContent =
       label;
+
 
     $('judgementBox').className =
       `judgement ${level}`;
@@ -758,12 +980,19 @@
 
 
     // ===================================================
-    // 気象庁情報の取得状態
+    // 気象庁取得状況
     // ===================================================
 
     updateWarningStatus(
       data
     );
+
+
+    // ===================================================
+    // 通信状態
+    // ===================================================
+
+    updateConnectionStatus();
 
 
     // ===================================================
@@ -814,12 +1043,17 @@
         return null;
       }
 
+
       const cached =
         JSON.parse(raw);
 
-      return isUsableData(cached)
+
+      return isUsableData(
+        cached
+      )
         ? cached
         : null;
+
 
     } catch (error) {
 
@@ -834,7 +1068,7 @@
 
 
   // =====================================================
-  // データ取得
+  // 最新データ取得
   // =====================================================
 
   async function load() {
@@ -845,9 +1079,11 @@
         await fetch(
           `data/current.json?t=${Date.now()}`,
           {
-            cache: 'no-store'
+            cache:
+              'no-store'
           }
         );
+
 
       if (!response.ok) {
 
@@ -856,19 +1092,40 @@
         );
       }
 
-      const data =
+
+      const nextData =
         await response.json();
 
-      if (!isUsableData(data)) {
+
+      if (
+        !isUsableData(
+          nextData
+        )
+      ) {
 
         throw new Error(
           'current.jsonの形式が不正です'
         );
       }
 
-      saveCache(data);
 
-      render(data);
+      // 最新JSON取得成功
+      fetchFailed =
+        false;
+
+
+      currentData =
+        nextData;
+
+
+      saveCache(
+        nextData
+      );
+
+
+      render(
+        nextData
+      );
 
     } catch (error) {
 
@@ -877,36 +1134,77 @@
         error
       );
 
+
+      // 最新JSONの取得失敗
+      fetchFailed =
+        true;
+
+
       const cached =
-        loadCache();
+        isUsableData(
+          currentData
+        )
+          ? currentData
+          : loadCache();
 
-      if (cached) {
 
-        render(cached);
+      // =================================================
+      // キャッシュあり
+      // =================================================
 
-        $('connection').textContent =
-          '▲ 更新遅延';
+      if (
+        isUsableData(
+          cached
+        )
+      ) {
 
-        $('connection').className =
-          'status delay';
+        currentData =
+          cached;
 
-      } else {
 
-        alerts = [];
+        render(
+          cached
+        );
+
+
+        // render後に改めて
+        // 取得失敗状態を反映
+        updateConnectionStatus();
+
+      }
+
+
+      // =================================================
+      // キャッシュなし
+      // =================================================
+
+      else {
+
+        currentData =
+          null;
+
+        alerts =
+          [];
+
 
         hideOverlay();
+
 
         $('connection').textContent =
           '× データなし';
 
+
         $('connection').className =
           'status error';
+
 
         $('activeInfo').textContent =
           '最新情報を取得できていません';
 
+
         $('judgement').textContent =
           '確認中';
+
 
         $('judgementBox').className =
           'judgement normal';
@@ -925,14 +1223,29 @@
       new Intl.DateTimeFormat(
         'ja-JP',
         {
-          timeZone: 'Asia/Tokyo',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          weekday: 'short',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
+          timeZone:
+            'Asia/Tokyo',
+
+          year:
+            'numeric',
+
+          month:
+            '2-digit',
+
+          day:
+            '2-digit',
+
+          weekday:
+            'short',
+
+          hour:
+            '2-digit',
+
+          minute:
+            '2-digit',
+
+          second:
+            '2-digit'
         }
       ).format(
         new Date()
@@ -943,18 +1256,17 @@
   // =====================================================
   // 毎秒処理
   //
-  // ・時計更新
-  // ・00分で注意情報表示開始
-  // ・10分で注意情報表示終了
-  // ・20秒ごとの画像切替
-  //
-  // タイマーを再生成しないため、
-  // ローテーションは毎秒リセットされない。
+  // 1. 時計
+  // 2. データ鮮度
+  // 3. 全画面警告
+  // 4. 20秒ローテーション
   // =====================================================
 
   function tick() {
 
     clock();
+
+    updateConnectionStatus();
 
     showOverlay();
   }
@@ -969,30 +1281,65 @@
     fit
   );
 
+
   fit();
 
-  // 保存済みデータがあれば
-  // 通信完了を待たず先に表示する
+
+  // =====================================================
+  // キャッシュがあれば
+  // 起動直後から表示
+  // =====================================================
+
   const cachedData =
     loadCache();
 
+
   if (cachedData) {
-    render(cachedData);
+
+    currentData =
+      cachedData;
+
+    render(
+      cachedData
+    );
   }
 
+
+  // =====================================================
   // 最新データ取得
+  // =====================================================
+
   load();
 
-  // 初回時計・オーバーレイ更新
+
+  // =====================================================
+  // 初回処理
+  // =====================================================
+
   tick();
 
-  // 毎秒更新
+
+  // =====================================================
+  // 1秒ごと
+  //
+  // ・時計
+  // ・通信鮮度
+  // ・00～10分判定
+  // ・20秒ローテーション
+  // =====================================================
+
   window.setInterval(
     tick,
     1000
   );
 
-  // 5分ごとに最新JSONを取得
+
+  // =====================================================
+  // 5分ごと
+  //
+  // current.json更新
+  // =====================================================
+
   window.setInterval(
     load,
     REFRESH_MS
