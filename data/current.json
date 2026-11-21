@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-21T07:32:20.228832Z",
+  "generated_at": "2026-11-21T07:42:20.355877Z",
   "location": {
     "name": "青梅・浄水場現場",
     "latitude": 35.780514,
@@ -22,12 +22,6 @@
       "title": "低温・凍結に注意",
       "immediate": false,
       "source": "forecast"
-    },
-    {
-      "key": "sunset",
-      "title": "日没時刻に注意",
-      "immediate": true,
-      "source": "time"
     }
   ],
   "judgement": {
@@ -46,11 +40,11 @@
   "warning_fetch_error": null,
   "warning_debug": {
     "type": "VPWS50",
-    "feed_timestamp": "20261121073101",
-    "report_datetime": "2026-11-21T16:30:00+09:00",
+    "feed_timestamp": "20261121074104",
+    "report_datetime": "2026-11-21T16:40:00+09:00",
     "active_names": [],
     "active_keys": [],
-    "source_file": "20261121073101_0_VPWS50_010000.xml",
+    "source_file": "20261121074104_0_VPWS50_010000.xml",
     "target_area_codes": [
       "1320500"
     ],
