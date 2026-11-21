@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-21T05:02:20.577926Z",
+  "generated_at": "2026-11-21T05:12:19.461898Z",
   "location": {
     "name": "青梅・浄水場現場",
     "latitude": 35.780514,
@@ -8,10 +8,10 @@
   },
   "weather": {
     "observed_at": "2026-11-21T14:00",
-    "temperature": 12.8,
+    "temperature": 12.6,
     "precipitation": 0.0,
     "code": 0,
-    "wind_speed": 1.3,
+    "wind_speed": 1.34,
     "rain_probability": 2,
     "min_temperature": 3.3,
     "sunset": "2026-11-21T16:32"
@@ -40,11 +40,11 @@
   "warning_fetch_error": null,
   "warning_debug": {
     "type": "VPWS50",
-    "feed_timestamp": "20261121050129",
-    "report_datetime": "2026-11-21T14:00:00+09:00",
+    "feed_timestamp": "20261121051101",
+    "report_datetime": "2026-11-21T14:10:00+09:00",
     "active_names": [],
     "active_keys": [],
-    "source_file": "20261121050129_0_VPWS50_010000.xml",
+    "source_file": "20261121051101_0_VPWS50_010000.xml",
     "target_area_codes": [
       "1320500"
     ],
