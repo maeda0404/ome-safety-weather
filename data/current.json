@@ -1,18 +1,18 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-22T01:52:20.235281Z",
+  "generated_at": "2026-11-22T02:02:22.656395Z",
   "location": {
     "name": "青梅・浄水場現場",
     "latitude": 35.780514,
     "longitude": 139.320413
   },
   "weather": {
-    "observed_at": "2026-11-22T10:45",
-    "temperature": 11.0,
+    "observed_at": "2026-11-22T11:00",
+    "temperature": 11.3,
     "precipitation": 0.0,
     "code": 0,
-    "wind_speed": 0.42,
-    "rain_probability": 3,
+    "wind_speed": 0.5,
+    "rain_probability": 6,
     "min_temperature": 2.7,
     "sunset": "2026-11-22T16:32"
   },
