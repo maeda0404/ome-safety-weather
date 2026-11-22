@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-22T03:32:21.955848Z",
+  "generated_at": "2026-11-22T03:42:19.525741Z",
   "location": {
     "name": "青梅・浄水場現場",
     "latitude": 35.780514,
@@ -46,15 +46,15 @@
   "warning_fetch_error": null,
   "warning_debug": {
     "type": "VPWS50",
-    "feed_timestamp": "20261122033101",
-    "report_datetime": "2026-11-22T12:30:00+09:00",
+    "feed_timestamp": "20261122034054",
+    "report_datetime": "2026-11-22T12:40:00+09:00",
     "active_names": [
       "乾燥注意報"
     ],
     "active_keys": [
       "dry"
     ],
-    "source_file": "20261122033101_0_VPWS50_010000.xml",
+    "source_file": "20261122034054_0_VPWS50_010000.xml",
     "target_area_codes": [
       "1320500"
     ],
