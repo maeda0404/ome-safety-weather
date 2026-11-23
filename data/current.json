@@ -1,17 +1,17 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-23T06:32:22.543895Z",
+  "generated_at": "2026-11-23T07:12:23.154047Z",
   "location": {
     "name": "青梅・浄水場現場",
     "latitude": 35.780514,
     "longitude": 139.320413
   },
   "weather": {
-    "observed_at": "2026-11-23T15:30",
-    "temperature": 12.6,
+    "observed_at": "2026-11-23T16:00",
+    "temperature": 11.7,
     "precipitation": 0.0,
     "code": 0,
-    "wind_speed": 1.42,
+    "wind_speed": 1.39,
     "rain_probability": 0,
     "min_temperature": 2.7,
     "sunset": "2026-11-23T16:31"
@@ -28,6 +28,12 @@
       "title": "低温・凍結に注意",
       "immediate": false,
       "source": "forecast"
+    },
+    {
+      "key": "sunset",
+      "title": "日没時刻に注意",
+      "immediate": true,
+      "source": "time"
     }
   ],
   "judgement": {
@@ -46,15 +52,15 @@
   "warning_fetch_error": null,
   "warning_debug": {
     "type": "VPWS50",
-    "feed_timestamp": "20261123063055",
-    "report_datetime": "2026-11-23T15:30:00+09:00",
+    "feed_timestamp": "20261123071057",
+    "report_datetime": "2026-11-23T16:10:00+09:00",
     "active_names": [
       "乾燥注意報"
     ],
     "active_keys": [
       "dry"
     ],
-    "source_file": "20261123063055_0_VPWS50_010000.xml",
+    "source_file": "20261123071057_0_VPWS50_010000.xml",
     "target_area_codes": [
       "1320500"
     ],
