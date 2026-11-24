@@ -8,39 +8,41 @@
 取得・判定内容
 --------------------------------------------------
 Open-Meteo:
-- 現在気温
-- 現在降水量
-- 天気コード
-- 現在風速
-- 降水確率
-- 最低気温
-- 日没時刻
+・現在気温
+・現在降水量
+・天気コード
+・現在風速
+・降水確率
+・最低気温
+・日没時刻
 
 気象庁:
-- 大雨警報
-- 暴風警報
-- 強風注意報
-- 雷注意報
-- 乾燥注意報
-- 雷予報
+・大雨警報
+・暴風警報
+・強風注意報
+・雷注意報
+・乾燥注意報
+・雷予報
 
 現場独自判定:
-- 時間降水量による大雨判定
-- 風速による強風・暴風判定
-- 降水確率判定
-- 最低気温による低温・凍結判定
-- 日没30分前から日没10分後までの日没注意
+・時間降水量による大雨判定
+・風速による強風・暴風判定
+・降水確率判定
+・最低気温による低温・凍結判定
+・日没30分前から日没10分後までの日没注意
 
 対象外:
-- 土砂災害
-- 波浪
-- 高潮
+・土砂災害
+・波浪
+・高潮
 """
 
 import gzip
 import json
 import re
 import tempfile
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -76,8 +78,12 @@ JMA_FORECAST_AREA_CODE = "130012"
 # VPWS50フィード側の区域コード
 VPWS50_FEED_AREA_CODE = "010000"
 
-REQUEST_TIMEOUT_SECONDS = 30
-USER_AGENT = "ome-waterworks-safety-signage/5.0"
+# HTTP通信設定
+REQUEST_TIMEOUT_SECONDS = 45
+REQUEST_RETRY_COUNT = 3
+REQUEST_RETRY_WAIT_SECONDS = 5
+
+USER_AGENT = "ome-waterworks-safety-signage/5.1"
 
 JST = ZoneInfo("Asia/Tokyo")
 
@@ -106,7 +112,7 @@ JMA_FORECAST_URL = (
 # =========================================================
 
 JMA_DATA_URL_PATTERN = re.compile(
-    r"https://www\.data\.jma\.go\.jp/"
+    r"https://www.data.jma.go.jp/"
     r"developer/xml/data/"
     r"(\d{14})_\d+_([A-Z0-9]+)_(\d{6})\.xml"
 )
@@ -158,41 +164,107 @@ def load_config():
 # =========================================================
 
 def request_bytes(url):
-    separator = "&" if "?" in url else "?"
+    """
+    URLからデータを取得する。
 
-    cache_buster = int(
-        datetime.now(timezone.utc).timestamp()
-    )
+    SSLタイムアウト、接続エラー、HTTPエラーなどが発生した場合は、
+    最大3回まで再試行する。
+    """
 
-    request_url = (
-        f"{url}{separator}_={cache_buster}"
-    )
+    last_error = None
 
-    request = urllib.request.Request(
-        request_url,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": (
-                "application/json,"
-                "application/xml,"
-                "text/xml,"
-                "*/*"
-            ),
-            "Cache-Control": "no-cache",
-            "Pragma": "no-cache",
-        },
-    )
+    for attempt in range(1, REQUEST_RETRY_COUNT + 1):
+        separator = "&" if "?" in url else "?"
 
-    with urllib.request.urlopen(
-        request,
-        timeout=REQUEST_TIMEOUT_SECONDS,
-    ) as response:
-        raw_data = response.read()
+        # 再試行ごとに異なる値を付けてキャッシュを回避
+        cache_buster = int(
+            datetime.now(timezone.utc).timestamp() * 1000
+        )
 
-    if raw_data[:2] == b"\x1f\x8b":
-        return gzip.decompress(raw_data)
+        request_url = (
+            f"{url}{separator}_={cache_buster}"
+        )
 
-    return raw_data
+        request = urllib.request.Request(
+            request_url,
+            headers={
+                "User-Agent": USER_AGENT,
+                "Accept": (
+                    "application/json,"
+                    "application/xml,"
+                    "text/xml,"
+                    "*/*"
+                ),
+                "Accept-Encoding": "gzip",
+                "Cache-Control": "no-cache",
+                "Pragma": "no-cache",
+                "Connection": "close",
+            },
+        )
+
+        try:
+            print(
+                f"HTTP取得開始 "
+                f"({attempt}/{REQUEST_RETRY_COUNT}): "
+                f"{url}"
+            )
+
+            with urllib.request.urlopen(
+                request,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            ) as response:
+                raw_data = response.read()
+
+            if raw_data[:2] == b"\x1f\x8b":
+                raw_data = gzip.decompress(raw_data)
+
+            print(
+                f"HTTP取得成功 "
+                f"({attempt}/{REQUEST_RETRY_COUNT}): "
+                f"{url}"
+            )
+
+            return raw_data
+
+        except (
+            TimeoutError,
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            ConnectionError,
+            OSError,
+        ) as error:
+            last_error = error
+
+            print(
+                f"HTTP取得失敗 "
+                f"({attempt}/{REQUEST_RETRY_COUNT}): "
+                f"{url}"
+            )
+
+            print(
+                f"{type(error).__name__}: {error}"
+            )
+
+            if attempt < REQUEST_RETRY_COUNT:
+                wait_seconds = (
+                    REQUEST_RETRY_WAIT_SECONDS
+                    * attempt
+                )
+
+                print(
+                    f"{wait_seconds}秒待って再試行します"
+                )
+
+                time.sleep(
+                    wait_seconds
+                )
+
+    raise RuntimeError(
+        f"HTTP取得に{REQUEST_RETRY_COUNT}回失敗しました: "
+        f"{url} / "
+        f"{type(last_error).__name__}: "
+        f"{last_error}"
+    ) from last_error
 
 
 def get_json(url):
@@ -336,10 +408,7 @@ def parse_open_meteo(data):
 
     rain_probability = 0
 
-    if (
-        hourly_index
-        < len(rain_probability_values)
-    ):
+    if hourly_index < len(rain_probability_values):
         rain_probability = (
             rain_probability_values[
                 hourly_index
@@ -568,9 +637,9 @@ def parse_warning_xml(raw_xml):
             )
 
             warning_status = child_text(
-    kind,
-    "Status",
-)
+                kind,
+                "Status",
+            )
 
             if not warning_name:
                 continue
@@ -794,8 +863,7 @@ def build_alerts(
 
     # 大雨
     if (
-        "heavyRain"
-        in official_warning_keys
+        "heavyRain" in official_warning_keys
         or precipitation
         >= thresholds[
             "heavy_rain_per_hour"
@@ -808,16 +876,14 @@ def build_alerts(
             True,
             (
                 "jma"
-                if "heavyRain"
-                in official_warning_keys
+                if "heavyRain" in official_warning_keys
                 else "measured"
             ),
         )
 
     # 暴風
     storm_active = (
-        "storm"
-        in official_warning_keys
+        "storm" in official_warning_keys
         or wind_speed
         >= thresholds["storm_wind"]
     )
@@ -830,8 +896,7 @@ def build_alerts(
             True,
             (
                 "jma"
-                if "storm"
-                in official_warning_keys
+                if "storm" in official_warning_keys
                 else "measured"
             ),
         )
@@ -839,8 +904,7 @@ def build_alerts(
     # 強風
     # 暴風判定時は重複表示しない
     strong_wind_active = (
-        "strongWind"
-        in official_warning_keys
+        "strongWind" in official_warning_keys
         or wind_speed
         >= thresholds["strong_wind"]
     )
@@ -856,8 +920,7 @@ def build_alerts(
             False,
             (
                 "jma"
-                if "strongWind"
-                in official_warning_keys
+                if "strongWind" in official_warning_keys
                 else "measured"
             ),
         )
@@ -1027,6 +1090,8 @@ def main():
     config = load_config()
 
     # Open-Meteo取得
+    # 取得できなければ気象データを生成できないため、
+    # 3回リトライ後も失敗した場合は処理を終了する
     open_meteo_url = build_open_meteo_url(
         config
     )
