@@ -7,14 +7,23 @@
   const CACHE_KEY = 'ome_safety_last_v6';
 
   const REFRESH_MS = 5 * 60 * 1000;
+
   const ROTATION_MS = 20 * 1000;
 
+  const SUNSET_BEFORE_MINUTES = 30;
+
+  const SUNSET_AFTER_MINUTES = 10;
+
   let currentData = null;
+
   let alerts = [];
 
   let alertIndex = 0;
+
   let lastRotationTime = 0;
+
   let lastQueueSignature = '';
+
   let lastDisplayedKey = '';
 
   let fetchFailed = false;
@@ -25,16 +34,27 @@
   // =====================================================
 
   const IMAGE_MAP = {
+
     dry: 'images/dry-warning.png',
+
     dryWarning: 'images/dry-warning.png',
+
     rainProbability: 'images/rain-probability.png',
+
     lowTemperature: 'images/low-temperature.png',
+
     heavyRain: 'images/heavy-rain.png',
+
     sunset: 'images/sunset.png',
+
     strongWind: 'images/strong-wind.png',
+
     storm: 'images/storm.png',
+
     thunder: 'images/thunder.png',
+
     thunderForecast: 'images/thunder-forecast.png'
+
   };
 
 
@@ -47,16 +67,22 @@
     const stage = $('stage');
 
     if (!stage) {
+
       return;
+
     }
 
     const scale = Math.min(
+
       window.innerWidth / 1920,
+
       window.innerHeight / 1080
+
     );
 
     stage.style.transform =
       `translate(-50%, -50%) scale(${scale})`;
+
   }
 
 
@@ -69,10 +95,13 @@
     const number = Number(value);
 
     if (!Number.isFinite(number)) {
+
       return '--';
+
     }
 
     return number.toFixed(digits);
+
   }
 
 
@@ -83,16 +112,21 @@
   function parseDate(value) {
 
     if (!value) {
+
       return null;
+
     }
 
     const date = new Date(value);
 
     if (!Number.isFinite(date.getTime())) {
+
       return null;
+
     }
 
     return date;
+
   }
 
 
@@ -101,22 +135,37 @@
     const date = parseDate(value);
 
     if (!date) {
+
       return '--';
+
     }
 
     return new Intl.DateTimeFormat(
+
       'ja-JP',
+
       {
+
         timeZone: 'Asia/Tokyo',
+
         year: 'numeric',
+
         month: '2-digit',
+
         day: '2-digit',
+
         weekday: 'short',
+
         hour: '2-digit',
+
         minute: '2-digit',
+
         second: '2-digit'
+
       }
+
     ).format(date);
+
   }
 
 
@@ -129,23 +178,26 @@
   // 2026-11-19T16:32
   // 2026-11-19T16:32:00
   // 2026-11-19T07:32:00Z
+  // 2026-11-19T16:32:00+09:00
   // =====================================================
 
   function formatTime(value) {
 
     if (!value) {
+
       return '--:--';
+
     }
 
-    const text =
-      String(value).trim();
+    const text = String(value).trim();
 
 
     // HH:MM
-    if (
-      /^\d{2}:\d{2}$/.test(text)
-    ) {
+
+    if (/^\d{2}:\d{2}$/.test(text)) {
+
       return text;
+
     }
 
 
@@ -153,31 +205,33 @@
     //
     // Open-Meteoから返される
     // タイムゾーン指定済みのローカル時刻
+
     if (
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text)
     ) {
+
       return text.slice(11, 16);
+
     }
 
 
     // YYYY-MM-DDTHH:MM:SS
+
     if (
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(text)
     ) {
+
       return text.slice(11, 16);
+
     }
 
 
     // Z または +09:00 などの
     // タイムゾーン付きISO日時
-    const date =
-      new Date(text);
 
-    if (
-      !Number.isFinite(
-        date.getTime()
-      )
-    ) {
+    const date = new Date(text);
+
+    if (!Number.isFinite(date.getTime())) {
 
       console.warn(
         '日没時刻を解析できません',
@@ -185,18 +239,94 @@
       );
 
       return '--:--';
+
     }
 
 
     return new Intl.DateTimeFormat(
+
       'ja-JP',
+
       {
+
         timeZone: 'Asia/Tokyo',
+
         hour: '2-digit',
+
         minute: '2-digit',
+
         hourCycle: 'h23'
+
       }
+
     ).format(date);
+
+  }
+
+
+  // =====================================================
+  // 日本時間の日時要素を取得
+  // =====================================================
+
+  function getJapanDateParts(date = new Date()) {
+
+    const parts = new Intl.DateTimeFormat(
+
+      'en-CA',
+
+      {
+
+        timeZone: 'Asia/Tokyo',
+
+        year: 'numeric',
+
+        month: '2-digit',
+
+        day: '2-digit',
+
+        hour: '2-digit',
+
+        minute: '2-digit',
+
+        second: '2-digit',
+
+        hourCycle: 'h23'
+
+      }
+
+    ).formatToParts(date);
+
+
+    const result = {};
+
+
+    parts.forEach((part) => {
+
+      if (part.type !== 'literal') {
+
+        result[part.type] = part.value;
+
+      }
+
+    });
+
+
+    return {
+
+      year: Number(result.year),
+
+      month: Number(result.month),
+
+      day: Number(result.day),
+
+      hour: Number(result.hour),
+
+      minute: Number(result.minute),
+
+      second: Number(result.second)
+
+    };
+
   }
 
 
@@ -206,35 +336,220 @@
 
   function getJapanMinute() {
 
-    const parts =
-      new Intl.DateTimeFormat(
-        'en-CA',
-        {
-          timeZone: 'Asia/Tokyo',
-          hour: '2-digit',
-          minute: '2-digit',
-          hourCycle: 'h23'
-        }
-      ).formatToParts(
-        new Date()
-      );
+    const parts = getJapanDateParts();
 
-    const minutePart =
-      parts.find(
-        (part) =>
-          part.type === 'minute'
-      );
-
-    const minute =
-      Number(
-        minutePart
-          ? minutePart.value
-          : NaN
-      );
-
-    return Number.isFinite(minute)
-      ? minute
+    return Number.isFinite(parts.minute)
+      ? parts.minute
       : 0;
+
+  }
+
+
+  // =====================================================
+  // 日没日時の解析
+  //
+  // HH:MMの場合は日本時間の当日として扱う
+  //
+  // タイムゾーンなしISO日時は
+  // 日本時間として扱う
+  //
+  // Zまたはオフセット付きISO日時は
+  // 指定されたタイムゾーンを使用する
+  // =====================================================
+
+  function parseSunsetDate(value, now = new Date()) {
+
+    if (!value) {
+
+      return null;
+
+    }
+
+
+    const text = String(value).trim();
+
+
+    // HH:MM
+
+    const timeOnlyMatch = text.match(
+      /^(\d{2}):(\d{2})$/
+    );
+
+
+    if (timeOnlyMatch) {
+
+      const japanNow = getJapanDateParts(now);
+
+      const hour = Number(timeOnlyMatch[1]);
+
+      const minute = Number(timeOnlyMatch[2]);
+
+
+      if (
+        !Number.isInteger(hour) ||
+        !Number.isInteger(minute) ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59
+      ) {
+
+        return null;
+
+      }
+
+
+      const isoText =
+        `${String(japanNow.year).padStart(4, '0')}-` +
+        `${String(japanNow.month).padStart(2, '0')}-` +
+        `${String(japanNow.day).padStart(2, '0')}T` +
+        `${String(hour).padStart(2, '0')}:` +
+        `${String(minute).padStart(2, '0')}:00+09:00`;
+
+
+      const date = new Date(isoText);
+
+
+      return Number.isFinite(date.getTime())
+        ? date
+        : null;
+
+    }
+
+
+    // YYYY-MM-DDTHH:MM または
+    // YYYY-MM-DDTHH:MM:SS
+    //
+    // タイムゾーン表記がない場合は
+    // 日本時間の +09:00 を付ける
+
+    if (
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text)
+    ) {
+
+      const date = new Date(`${text}:00+09:00`);
+
+
+      return Number.isFinite(date.getTime())
+        ? date
+        : null;
+
+    }
+
+
+    if (
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(text)
+    ) {
+
+      const date = new Date(`${text}+09:00`);
+
+
+      return Number.isFinite(date.getTime())
+        ? date
+        : null;
+
+    }
+
+
+    // Zまたは+09:00などが付いている場合
+
+    const date = new Date(text);
+
+
+    return Number.isFinite(date.getTime())
+      ? date
+      : null;
+
+  }
+
+
+  // =====================================================
+  // 日没注意判定
+  //
+  // 日没30分前から日没後10分まで
+  //
+  // 例：
+  // 日没 16:31
+  //
+  // 開始 16:01:00
+  // 終了 16:41:00
+  //
+  // 16:41:00まで表示対象
+  // =====================================================
+
+  function isSunsetAlertActive() {
+
+    if (
+      !currentData ||
+      !currentData.weather
+    ) {
+
+      return false;
+
+    }
+
+
+    const now = new Date();
+
+    const sunsetDate = parseSunsetDate(
+
+      currentData.weather.sunset,
+
+      now
+
+    );
+
+
+    if (!sunsetDate) {
+
+      return false;
+
+    }
+
+
+    const startTime =
+      sunsetDate.getTime() -
+      SUNSET_BEFORE_MINUTES *
+      60 *
+      1000;
+
+
+    const endTime =
+      sunsetDate.getTime() +
+      SUNSET_AFTER_MINUTES *
+      60 *
+      1000;
+
+
+    const currentTime = now.getTime();
+
+
+    return (
+      currentTime >= startTime &&
+      currentTime <= endTime
+    );
+
+  }
+
+
+  // =====================================================
+  // 日没注意アラート
+  // =====================================================
+
+  function createSunsetAlert() {
+
+    return {
+
+      key: 'sunset',
+
+      title: 'まもなく日没です。照明の準備と足元に注意してください',
+
+      immediate: true,
+
+      source: 'sunset'
+
+    };
+
   }
 
 
@@ -247,44 +562,61 @@
     const WEATHER_NAMES = {
 
       0: '快晴',
+
       1: '晴れ',
+
       2: '晴れ時々曇り',
+
       3: '曇り',
 
       45: '霧',
+
       48: '霧',
 
       51: '弱い霧雨',
+
       53: '霧雨',
+
       55: '強い霧雨',
 
       61: '弱い雨',
+
       63: '雨',
+
       65: '強い雨',
 
       71: '弱い雪',
+
       73: '雪',
+
       75: '強い雪',
+
       77: '霧雪',
 
       80: 'にわか雨',
+
       81: 'にわか雨',
+
       82: '激しいにわか雨',
 
       85: 'にわか雪',
+
       86: '強いにわか雪',
 
       95: '雷雨',
+
       96: '雷雨',
+
       99: '激しい雷雨'
+
     };
 
+
     return (
-      WEATHER_NAMES[
-        Number(code)
-      ] ||
+      WEATHER_NAMES[Number(code)] ||
       '不明'
     );
+
   }
 
 
@@ -304,29 +636,26 @@
   function freshness(iso) {
 
     const generatedTime =
-      new Date(
-        iso
-      ).getTime();
+      new Date(iso).getTime();
 
-    if (
-      !Number.isFinite(
-        generatedTime
-      )
-    ) {
+
+    if (!Number.isFinite(generatedTime)) {
 
       return [
         '× 通信失敗',
         'error'
       ];
+
     }
 
 
-    const ageMilliseconds =
-      Math.max(
-        0,
-        Date.now() -
-          generatedTime
-      );
+    const ageMilliseconds = Math.max(
+
+      0,
+
+      Date.now() - generatedTime
+
+    );
 
 
     const ageHours =
@@ -338,25 +667,23 @@
       );
 
 
-    if (
-      ageHours < 1
-    ) {
+    if (ageHours < 1) {
 
       return [
         '● 通信正常',
         'normal'
       ];
+
     }
 
 
-    if (
-      ageHours < 3
-    ) {
+    if (ageHours < 3) {
 
       return [
         '▲ 更新遅延',
         'delay'
       ];
+
     }
 
 
@@ -364,6 +691,7 @@
       '× 通信失敗',
       'error'
     ];
+
   }
 
 
@@ -376,7 +704,9 @@
   function updateConnectionStatus() {
 
     if (!currentData) {
+
       return;
+
     }
 
 
@@ -388,14 +718,13 @@
     );
 
 
-    let text =
-      freshnessText;
+    let text = freshnessText;
 
-    let className =
-      freshnessClass;
+    let className = freshnessClass;
 
 
     // JSON取得自体が失敗している場合
+
     if (fetchFailed) {
 
       if (
@@ -403,34 +732,33 @@
         'error'
       ) {
 
-        text =
-          '× 通信失敗';
+        text = '× 通信失敗';
 
-        className =
-          'error';
+        className = 'error';
 
       } else {
 
-        text =
-          '▲ 更新遅延';
+        text = '▲ 更新遅延';
 
-        className =
-          'delay';
+        className = 'delay';
+
       }
+
     }
 
 
-    const connection =
-      $('connection');
+    const connection = $('connection');
+
 
     if (connection) {
 
-      connection.textContent =
-        text;
+      connection.textContent = text;
 
       connection.className =
         `status ${className}`;
+
     }
+
   }
 
 
@@ -440,17 +768,17 @@
 
   function getWarningStatusElement() {
 
-    let status =
-      $('warningStatus');
+    let status = $('warningStatus');
 
 
     if (status) {
+
       return status;
+
     }
 
 
-    const connection =
-      $('connection');
+    const connection = $('connection');
 
 
     if (
@@ -459,45 +787,41 @@
     ) {
 
       return null;
+
     }
 
 
-    status =
-      document.createElement(
-        'span'
-      );
+    status = document.createElement(
+      'span'
+    );
 
 
-    status.id =
-      'warningStatus';
+    status.id = 'warningStatus';
 
+    status.style.marginLeft = '12px';
 
-    status.style.marginLeft =
-      '12px';
+    status.style.padding = '4px 10px';
 
-    status.style.padding =
-      '4px 10px';
+    status.style.borderRadius = '8px';
 
-    status.style.borderRadius =
-      '8px';
+    status.style.fontWeight = 'bold';
 
-    status.style.fontWeight =
-      'bold';
+    status.style.whiteSpace = 'nowrap';
 
-    status.style.whiteSpace =
-      'nowrap';
-
-    status.hidden =
-      true;
+    status.hidden = true;
 
 
     connection.parentNode.insertBefore(
+
       status,
+
       connection.nextSibling
+
     );
 
 
     return status;
+
   }
 
 
@@ -508,12 +832,15 @@
 
 
     if (!status) {
+
       return;
+
     }
 
 
     // 気象庁警報・注意報だけでなく
     // 雷予報取得失敗も監視
+
     const warningError =
       data.warning_fetch_error ||
       data.warningFetchError ||
@@ -526,8 +853,7 @@
       status.textContent =
         '⚠ 防災情報の一部を取得できていません';
 
-      status.hidden =
-        false;
+      status.hidden = false;
 
       status.style.display =
         'inline-block';
@@ -542,17 +868,16 @@
         '2px solid #d39e00';
 
       return;
+
     }
 
 
-    status.textContent =
-      '';
+    status.textContent = '';
 
-    status.hidden =
-      true;
+    status.hidden = true;
 
-    status.style.display =
-      'none';
+    status.style.display = 'none';
+
   }
 
 
@@ -569,6 +894,7 @@
     ) {
 
       return false;
+
     }
 
 
@@ -581,6 +907,7 @@
     return Number.isFinite(
       generatedTime
     );
+
   }
 
 
@@ -590,11 +917,10 @@
 
   function normalizeAlerts(value) {
 
-    if (
-      !Array.isArray(value)
-    ) {
+    if (!Array.isArray(value)) {
 
       return [];
+
     }
 
 
@@ -603,14 +929,11 @@
       .filter(
 
         (alert) =>
-
           alert &&
-
           typeof alert.key ===
-            'string' &&
-
+          'string' &&
           typeof alert.title ===
-            'string'
+          'string'
 
       )
 
@@ -635,6 +958,81 @@
         })
 
       );
+
+  }
+
+
+  // =====================================================
+  // アラート重複除去
+  //
+  // 同一keyは1件だけ残す
+  // =====================================================
+
+  function uniqueAlerts(value) {
+
+    const result = [];
+
+    const usedKeys = new Set();
+
+
+    value.forEach((alert) => {
+
+      if (
+        !alert ||
+        !alert.key ||
+        usedKeys.has(alert.key)
+      ) {
+
+        return;
+
+      }
+
+
+      usedKeys.add(alert.key);
+
+      result.push(alert);
+
+    });
+
+
+    return result;
+
+  }
+
+
+  // =====================================================
+  // 現在成立中の全アラート
+  //
+  // 発表・判定中の情報および
+  // 総合判定に使用
+  //
+  // current.json側のsunsetは除外し
+  // ブラウザ側のリアルタイム判定を使用
+  // =====================================================
+
+  function getActiveAlerts() {
+
+    const baseAlerts = alerts.filter(
+
+      (alert) =>
+        alert.key !== 'sunset'
+
+    );
+
+
+    if (isSunsetAlertActive()) {
+
+      baseAlerts.push(
+        createSunsetAlert()
+      );
+
+    }
+
+
+    return uniqueAlerts(
+      baseAlerts
+    );
+
   }
 
 
@@ -642,46 +1040,84 @@
   // 全画面表示対象
   //
   // immediate = true
-  // → 常時即時表示
+  // → 常時表示
+  //
+  // 日没
+  // → 日没30分前から日没後10分まで常時表示
   //
   // その他
-  // → 毎時00分～10分未満
+  // → 毎時00分から10分未満
+  //
+  // すべて同列の配列へまとめる
+  // 複数ある場合は20秒ごとに切り替える
   // =====================================================
 
   function getOverlayAlerts() {
 
-    const urgent =
-      alerts.filter(
-        (alert) =>
-          Boolean(
-            alert.immediate
-          )
+    const minute = getJapanMinute();
+
+    const noticeDisplayTime =
+      minute >= 0 &&
+      minute < 10;
+
+
+    const shown = [];
+
+
+    alerts.forEach((alert) => {
+
+      // 日没はブラウザ側で判定するため
+      // current.json内のsunsetはここでは使用しない
+
+      if (alert.key === 'sunset') {
+
+        return;
+
+      }
+
+
+      // 警報級などの即時表示対象
+
+      if (alert.immediate) {
+
+        shown.push(alert);
+
+        return;
+
+      }
+
+
+      // 通常注意情報
+      // 毎時00:00～09:59に表示
+
+      if (noticeDisplayTime) {
+
+        shown.push(alert);
+
+      }
+
+    });
+
+
+    // 日没注意
+    //
+    // 日没30分前から日没後10分まで
+    // 00～10分ルールとは無関係に追加
+    //
+    // 他の警報・注意情報と同列で
+    // 20秒ローテーション
+
+    if (isSunsetAlertActive()) {
+
+      shown.push(
+        createSunsetAlert()
       );
 
-
-    // 警報級・日没を優先
-    if (
-      urgent.length > 0
-    ) {
-
-      return urgent;
     }
 
 
-    const minute =
-      getJapanMinute();
+    return uniqueAlerts(shown);
 
-
-    if (
-      minute >= 0 &&
-      minute < 10
-    ) {
-
-      return alerts;
-    }
-
-
-    return [];
   }
 
 
@@ -697,22 +1133,19 @@
 
     if (overlay) {
 
-      overlay.hidden =
-        true;
+      overlay.hidden = true;
+
     }
 
 
-    alertIndex =
-      0;
+    alertIndex = 0;
 
-    lastRotationTime =
-      0;
+    lastRotationTime = 0;
 
-    lastQueueSignature =
-      '';
+    lastQueueSignature = '';
 
-    lastDisplayedKey =
-      '';
+    lastDisplayedKey = '';
+
   }
 
 
@@ -734,7 +1167,9 @@
 
 
     if (!overlay) {
+
       return;
+
     }
 
 
@@ -743,16 +1178,20 @@
       hideOverlay();
 
       return;
+
     }
 
 
-    const signature =
-      shown
-        .map(
-          (alert) =>
-            `${alert.key}:${alert.title}`
-        )
-        .join('|');
+    const signature = shown
+
+      .map(
+
+        (alert) =>
+          `${alert.key}:${alert.title}`
+
+      )
+
+      .join('|');
 
 
     const currentTime =
@@ -761,35 +1200,36 @@
 
     // アラート内容自体が変化した場合のみ
     // 1枚目へ戻す
+
     if (
       signature !==
       lastQueueSignature
     ) {
 
-      alertIndex =
-        0;
-
+      alertIndex = 0;
 
       lastRotationTime =
         currentTime;
 
-
       lastQueueSignature =
         signature;
 
+      lastDisplayedKey = '';
 
-      lastDisplayedKey =
-        '';
     }
 
 
     // 内容が同じ場合は
     // 20秒経過時のみ次へ
+
     else if (
+
       shown.length > 1 &&
+
       currentTime -
-        lastRotationTime >=
-        ROTATION_MS
+      lastRotationTime >=
+      ROTATION_MS
+
     ) {
 
       alertIndex =
@@ -801,6 +1241,7 @@
 
       lastRotationTime =
         currentTime;
+
     }
 
 
@@ -809,9 +1250,7 @@
 
 
     const alert =
-      shown[
-        alertIndex
-      ];
+      shown[alertIndex];
 
 
     const image =
@@ -826,8 +1265,7 @@
       $('overlayCount');
 
 
-    overlay.hidden =
-      false;
+    overlay.hidden = false;
 
 
     if (fallback) {
@@ -835,9 +1273,9 @@
       fallback.textContent =
         alert.title;
 
-
       fallback.style.display =
         'none';
+
     }
 
 
@@ -846,46 +1284,45 @@
       image.alt =
         alert.title;
 
-
       image.style.display =
         'block';
 
 
-      image.onerror =
-        () => {
+      image.onerror = () => {
 
-          image.style.display =
-            'none';
+        image.style.display =
+          'none';
 
 
-          if (fallback) {
+        if (fallback) {
 
-            fallback.style.display =
-              'block';
-          }
-        };
+          fallback.style.display =
+            'block';
+
+        }
+
+      };
 
 
       const imagePath =
-        IMAGE_MAP[
-          alert.key
-        ];
+        IMAGE_MAP[alert.key];
 
 
       if (imagePath) {
 
         // 同じ画像を毎秒読み直さない
+
         if (
           lastDisplayedKey !==
           alert.key
         ) {
 
           image.src =
-            `${imagePath}?v=8`;
-
+            `${imagePath}?v=9`;
 
           lastDisplayedKey =
             alert.key;
+
         }
 
       } else {
@@ -893,17 +1330,18 @@
         image.style.display =
           'none';
 
-
-        lastDisplayedKey =
-          '';
+        lastDisplayedKey = '';
 
 
         if (fallback) {
 
           fallback.style.display =
             'block';
+
         }
+
       }
+
     }
 
 
@@ -913,7 +1351,121 @@
         shown.length > 1
           ? `${alertIndex + 1} / ${shown.length}`
           : '';
+
     }
+
+  }
+
+
+  // =====================================================
+  // 発表・判定中情報
+  //
+  // 日没注意の開始・終了に合わせて
+  // 毎秒更新
+  // =====================================================
+
+  function updateActiveInformation() {
+
+    if (!currentData) {
+
+      return;
+
+    }
+
+
+    const activeAlerts =
+      getActiveAlerts();
+
+
+    const activeInfo =
+      $('activeInfo');
+
+
+    if (activeInfo) {
+
+      activeInfo.textContent =
+        activeAlerts.length
+          ? activeAlerts
+
+            .map(
+
+              (alert) =>
+                alert.title
+
+            )
+
+            .join('　／　')
+
+          : '発表・判定中の情報はありません';
+
+    }
+
+
+    const judgement =
+      currentData.judgement ||
+      {};
+
+
+    let level =
+      judgement.level ||
+      (
+        activeAlerts.length
+          ? 'caution'
+          : 'normal'
+      );
+
+
+    let label =
+      judgement.label ||
+      (
+        activeAlerts.length
+          ? '注意情報あり'
+          : '通常'
+      );
+
+
+    // JSON側が通常判定でも
+    // ブラウザ側の日没注意が成立している場合は
+    // 注意情報ありへ変更
+
+    if (
+      isSunsetAlertActive() &&
+      (
+        !level ||
+        level === 'normal'
+      )
+    ) {
+
+      level = 'caution';
+
+      label = '注意情報あり';
+
+    }
+
+
+    const judgementElement =
+      $('judgement');
+
+
+    if (judgementElement) {
+
+      judgementElement.textContent =
+        label;
+
+    }
+
+
+    const judgementBox =
+      $('judgementBox');
+
+
+    if (judgementBox) {
+
+      judgementBox.className =
+        `judgement ${level}`;
+
+    }
+
   }
 
 
@@ -923,16 +1475,14 @@
 
   function render(data) {
 
-    if (
-      !isUsableData(data)
-    ) {
+    if (!isUsableData(data)) {
 
       return;
+
     }
 
 
-    currentData =
-      data;
+    currentData = data;
 
 
     const weather =
@@ -946,12 +1496,14 @@
     const temperature =
       $('temperature');
 
+
     if (temperature) {
 
       temperature.textContent =
         fmt(
           weather.temperature
         );
+
     }
 
 
@@ -962,6 +1514,7 @@
     const weatherElement =
       $('weather');
 
+
     if (weatherElement) {
 
       weatherElement.textContent =
@@ -969,6 +1522,7 @@
         weatherText(
           weather.code
         );
+
     }
 
 
@@ -979,6 +1533,7 @@
     const rainProbability =
       $('rainProbability');
 
+
     if (rainProbability) {
 
       rainProbability.textContent =
@@ -986,6 +1541,7 @@
           weather.rain_probability,
           0
         );
+
     }
 
 
@@ -996,12 +1552,14 @@
     const precipitation =
       $('precipitation');
 
+
     if (precipitation) {
 
       precipitation.textContent =
         fmt(
           weather.precipitation
         );
+
     }
 
 
@@ -1012,12 +1570,14 @@
     const windSpeed =
       $('windSpeed');
 
+
     if (windSpeed) {
 
       windSpeed.textContent =
         fmt(
           weather.wind_speed
         );
+
     }
 
 
@@ -1028,12 +1588,14 @@
     const minTemperature =
       $('minTemperature');
 
+
     if (minTemperature) {
 
       minTemperature.textContent =
         fmt(
           weather.min_temperature
         );
+
     }
 
 
@@ -1047,12 +1609,14 @@
     const sunset =
       $('sunset');
 
+
     if (sunset) {
 
       sunset.textContent =
         formatTime(
           weather.sunset
         );
+
     }
 
 
@@ -1063,12 +1627,14 @@
     const generatedAt =
       $('generatedAt');
 
+
     if (generatedAt) {
 
       generatedAt.textContent =
         formatDateTime(
           data.generated_at
         );
+
     }
 
 
@@ -1083,74 +1649,11 @@
 
 
     // ===================================================
+    // 発表・判定中情報
     // 総合判定
     // ===================================================
 
-    const judgement =
-      data.judgement ||
-      {};
-
-
-    const level =
-      judgement.level ||
-      (
-        alerts.length
-          ? 'caution'
-          : 'normal'
-      );
-
-
-    const label =
-      judgement.label ||
-      (
-        alerts.length
-          ? '注意情報あり'
-          : '通常'
-      );
-
-
-    const judgementElement =
-      $('judgement');
-
-
-    if (judgementElement) {
-
-      judgementElement.textContent =
-        label;
-    }
-
-
-    const judgementBox =
-      $('judgementBox');
-
-
-    if (judgementBox) {
-
-      judgementBox.className =
-        `judgement ${level}`;
-    }
-
-
-    // ===================================================
-    // 発表・判定中情報
-    // ===================================================
-
-    const activeInfo =
-      $('activeInfo');
-
-
-    if (activeInfo) {
-
-      activeInfo.textContent =
-        alerts.length
-          ? alerts
-              .map(
-                (alert) =>
-                  alert.title
-              )
-              .join('　／　')
-          : '発表・判定中の情報はありません';
-    }
+    updateActiveInformation();
 
 
     // ===================================================
@@ -1174,6 +1677,7 @@
     // ===================================================
 
     showOverlay();
+
   }
 
 
@@ -1186,17 +1690,25 @@
     try {
 
       localStorage.setItem(
+
         CACHE_KEY,
+
         JSON.stringify(data)
+
       );
 
     } catch (error) {
 
       console.warn(
+
         'キャッシュ保存失敗',
+
         error
+
       );
+
     }
+
   }
 
 
@@ -1215,7 +1727,9 @@
 
 
       if (!raw) {
+
         return null;
+
       }
 
 
@@ -1223,9 +1737,7 @@
         JSON.parse(raw);
 
 
-      return isUsableData(
-        cached
-      )
+      return isUsableData(cached)
         ? cached
         : null;
 
@@ -1233,13 +1745,18 @@
     } catch (error) {
 
       console.warn(
+
         'キャッシュ読込失敗',
+
         error
+
       );
 
 
       return null;
+
     }
+
   }
 
 
@@ -1253,18 +1770,26 @@
 
       const response =
         await fetch(
+
           `data/current.json?t=${Date.now()}`,
+
           {
+
             cache: 'no-store'
+
           }
+
         );
 
 
       if (!response.ok) {
 
         throw new Error(
+
           `HTTP ${response.status}`
+
         );
+
       }
 
 
@@ -1272,24 +1797,20 @@
         await response.json();
 
 
-      if (
-        !isUsableData(
-          nextData
-        )
-      ) {
+      if (!isUsableData(nextData)) {
 
         throw new Error(
+
           'current.jsonの形式が不正です'
+
         );
+
       }
 
 
-      fetchFailed =
-        false;
+      fetchFailed = false;
 
-
-      currentData =
-        nextData;
+      currentData = nextData;
 
 
       saveCache(
@@ -1305,19 +1826,19 @@
     } catch (error) {
 
       console.error(
+
         '気象データ取得失敗',
+
         error
+
       );
 
 
-      fetchFailed =
-        true;
+      fetchFailed = true;
 
 
       const cached =
-        isUsableData(
-          currentData
-        )
+        isUsableData(currentData)
           ? currentData
           : loadCache();
 
@@ -1326,14 +1847,9 @@
       // キャッシュあり
       // =================================================
 
-      if (
-        isUsableData(
-          cached
-        )
-      ) {
+      if (isUsableData(cached)) {
 
-        currentData =
-          cached;
+        currentData = cached;
 
 
         render(
@@ -1342,6 +1858,7 @@
 
 
         updateConnectionStatus();
+
       }
 
 
@@ -1351,12 +1868,9 @@
 
       else {
 
-        currentData =
-          null;
+        currentData = null;
 
-
-        alerts =
-          [];
+        alerts = [];
 
 
         hideOverlay();
@@ -1371,9 +1885,9 @@
           connection.textContent =
             '× データなし';
 
-
           connection.className =
             'status error';
+
         }
 
 
@@ -1385,6 +1899,7 @@
 
           activeInfo.textContent =
             '最新情報を取得できていません';
+
         }
 
 
@@ -1396,6 +1911,7 @@
 
           judgement.textContent =
             '確認中';
+
         }
 
 
@@ -1407,9 +1923,13 @@
 
           judgementBox.className =
             'judgement normal';
+
         }
+
       }
+
     }
+
   }
 
 
@@ -1424,26 +1944,41 @@
 
 
     if (!clockElement) {
+
       return;
+
     }
 
 
     clockElement.textContent =
       new Intl.DateTimeFormat(
+
         'ja-JP',
+
         {
+
           timeZone: 'Asia/Tokyo',
+
           year: 'numeric',
+
           month: '2-digit',
+
           day: '2-digit',
+
           weekday: 'short',
+
           hour: '2-digit',
+
           minute: '2-digit',
+
           second: '2-digit'
+
         }
+
       ).format(
         new Date()
       );
+
   }
 
 
@@ -1452,8 +1987,11 @@
   //
   // ・時計更新
   // ・データ鮮度確認
+  // ・日没30分前～日没後10分の判定
   // ・00～10分表示制御
   // ・20秒ローテーション
+  // ・発表・判定中情報の更新
+  // ・総合判定の更新
   // =====================================================
 
   function tick() {
@@ -1462,7 +2000,10 @@
 
     updateConnectionStatus();
 
+    updateActiveInformation();
+
     showOverlay();
+
   }
 
 
@@ -1471,8 +2012,11 @@
   // =====================================================
 
   window.addEventListener(
+
     'resize',
+
     fit
+
   );
 
 
@@ -1480,6 +2024,7 @@
 
 
   // 保存済みデータを先に表示
+
   const cachedData =
     loadCache();
 
@@ -1493,14 +2038,17 @@
     render(
       cachedData
     );
+
   }
 
 
   // 最新データ取得
+
   load();
 
 
   // 初回更新
+
   tick();
 
 
@@ -1509,8 +2057,11 @@
   // =====================================================
 
   window.setInterval(
+
     tick,
+
     1000
+
   );
 
 
@@ -1519,8 +2070,11 @@
   // =====================================================
 
   window.setInterval(
+
     load,
+
     REFRESH_MS
+
   );
 
 })();
