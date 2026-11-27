@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-27T03:32:19.050316Z",
+  "generated_at": "2026-11-27T03:42:20.932795Z",
   "location": {
     "name": "青梅・浄水場現場",
     "latitude": 35.780514,
@@ -33,11 +33,11 @@
   "warning_fetch_error": null,
   "warning_debug": {
     "type": "VPWS50",
-    "feed_timestamp": "20261127033055",
-    "report_datetime": "2026-11-27T12:30:00+09:00",
+    "feed_timestamp": "20261127034059",
+    "report_datetime": "2026-11-27T12:40:00+09:00",
     "active_names": [],
     "active_keys": [],
-    "source_file": "20261127033055_0_VPWS50_010000.xml",
+    "source_file": "20261127034059_0_VPWS50_010000.xml",
     "target_area_codes": [
       "1320500"
     ],
